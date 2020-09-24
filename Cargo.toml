@@ -8,3 +8,4 @@ repository = "https://github.com/mmaroti/abstalg-rs/"
 alicense = "MIT"
 
 [dependencies]
+num-bigint = "0.3"
