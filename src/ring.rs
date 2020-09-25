@@ -3,15 +3,13 @@
 
 //! A module that contains ring like structures.
 
-use num_bigint::BigInt;
-use num_integer::Integer;
-use num_traits::Signed;
-use num_traits::Zero;
+use num::{BigInt, Integer, Signed, Zero};
+use std::fmt::Display;
 
 /// An arbitrary set of elements.
 pub trait Domain {
     /// The type of the elements of this domain.
-    type Elem: Clone;
+    type Elem: Clone + Display;
 
     /// Checks if the given element is a member of the domain.
     fn contains(&self, elem: &Self::Elem) -> bool;
@@ -89,6 +87,11 @@ pub trait RingWithIdentity: Domain {
 
     /// The additive sum of the given elements
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
+
+    /// The difference of the given elements.
+    fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        self.add(elem1, &self.neg(elem2))
+    }
 
     /// The multiplicative identity element of the ring.
     fn one(&self) -> Self::Elem;
@@ -194,8 +197,13 @@ pub trait EuclideanDomain: RingWithIdentity {
 
     /// Returns true if the first element is a multiple of the second one.
     fn is_multiple_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        let rem = self.rem(elem1, elem2);
-        self.is_zero(&rem)
+        self.is_zero(&self.rem(elem1, elem2))
+    }
+
+    /// Returns true if the first element is its own remainder when the
+    /// divided by the second one (so the quotient is zero).
+    fn is_reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.is_zero(&self.div(elem1, elem2))
     }
 
     /// Returns true if the two elements are associated (divide each other)
@@ -222,6 +230,24 @@ pub trait EuclideanDomain: RingWithIdentity {
         elem1
     }
 
+    /// Performs the extended Euclidean algorithm which returns the greatest
+    /// common divisor, and two elements that multiplied with the inputs gives
+    /// the greatest common divisor.
+    fn extended_gcd(
+        &self,
+        elem1: &Self::Elem,
+        elem2: &Self::Elem,
+    ) -> (Self::Elem, Self::Elem, Self::Elem) {
+        if self.is_zero(elem2) {
+            (elem1.clone(), self.one(), self.zero())
+        } else {
+            let (div, rem) = self.div_rem(elem1, elem2);
+            let (gcd, x, y) = self.extended_gcd(elem2, &rem);
+            let z = self.sub(&x, &self.mul(&y, &div));
+            (gcd, y, z)
+        }
+    }
+
     /// Checks if the given two elements are relative prime.
     fn are_relative_prime(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         let gcd = self.gcd(elem1, elem2);
@@ -230,10 +256,10 @@ pub trait EuclideanDomain: RingWithIdentity {
 
     /// Among all the associates of the given elem if there is a well defined
     /// unique one (non-negative for integers, zero or monoic for polynomials),
-    /// then this method returns that one. In general this method returns the
-    /// given element.
-    fn normalize(&self, elem: &Self::Elem) -> Self::Elem {
-        elem.clone()
+    /// then this method returns quotient of that unique element and the input
+    /// one. In general, this method returns one.
+    fn normalizer(&self, _elem: &Self::Elem) -> Self::Elem {
+        self.one()
     }
 }
 
@@ -278,8 +304,22 @@ impl EuclideanDomain for BigIntegers {
         }
     }
 
-    fn normalize(&self, elem: &Self::Elem) -> Self::Elem {
-        elem.abs()
+    fn is_reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        if elem2.is_zero() {
+            true
+        } else {
+            let elem1 = elem1 + elem1;
+            let elem2 = elem2.abs();
+            -&elem2 < elem1 && elem1 <= elem2
+        }
+    }
+
+    fn normalizer(&self, elem: &Self::Elem) -> Self::Elem {
+        if elem.is_negative() {
+            (-1).into()
+        } else {
+            1.into()
+        }
     }
 }
 
@@ -327,8 +367,23 @@ impl EuclideanDomain for Integers32 {
         }
     }
 
-    fn normalize(&self, elem: &Self::Elem) -> Self::Elem {
-        i32::checked_abs(*elem).unwrap()
+    fn is_reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        if *elem2 == 0 {
+            true
+        } else {
+            let elem2 = if *elem2 < 0 { *elem2 } else { -elem2 };
+            (elem2 + 1) / 2 <= *elem1 && *elem1 <= -(elem2 / 2)
+        }
+    }
+
+    fn normalizer(&self, elem: &Self::Elem) -> Self::Elem {
+        if *elem == i32::MIN {
+            panic!();
+        } else if *elem < 0 {
+            -1
+        } else {
+            0
+        }
     }
 }
 
@@ -376,15 +431,92 @@ impl EuclideanDomain for Integers64 {
         }
     }
 
-    fn normalize(&self, elem: &Self::Elem) -> Self::Elem {
-        i64::checked_abs(*elem).unwrap()
+    fn is_reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        if *elem2 == 0 {
+            true
+        } else {
+            let elem2 = if *elem2 < 0 { *elem2 } else { -elem2 };
+            (elem2 + 1) / 2 <= *elem1 && *elem1 <= -(elem2 / 2)
+        }
+    }
+
+    fn normalizer(&self, elem: &Self::Elem) -> Self::Elem {
+        if *elem == i64::MIN {
+            panic!();
+        } else if *elem < 0 {
+            -1
+        } else {
+            0
+        }
+    }
+}
+
+/// A quotient ring over an Euclidean domain by a principal ideal.
+#[derive(Clone, Debug, Default)]
+pub struct QuotientRing<RING: EuclideanDomain> {
+    base: RING,
+    modulo: RING::Elem,
+    one: RING::Elem,
+}
+
+impl<RING: EuclideanDomain> QuotientRing<RING> {
+    /// Creates a new quotient ring from the given Euclidean domain and
+    /// one of its element.
+    pub fn new(base: RING, modulo: RING::Elem) -> Self {
+        assert!(base.contains(&modulo));
+        // if the quotient is trivial, then the identity element becomes zero.
+        let one = base.div(&base.one(), &modulo);
+        QuotientRing { base, modulo, one }
+    }
+
+    /// Returns the base ring from which this ring was constructed.
+    pub fn base(&self) -> &RING {
+        &self.base
+    }
+
+    /// Returns the modulo element from which this ring was constructed.
+    pub fn modulo(&self) -> &RING::Elem {
+        &self.modulo
+    }
+}
+
+impl<RING: EuclideanDomain> Domain for QuotientRing<RING> {
+    type Elem = RING::Elem;
+
+    fn contains(&self, elem: &Self::Elem) -> bool {
+        self.base.is_reduced(elem, &self.modulo)
+    }
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.base.equals(elem1, elem2)
+    }
+}
+
+impl<RING: EuclideanDomain> RingWithIdentity for QuotientRing<RING> {
+    fn zero(&self) -> Self::Elem {
+        self.base.zero()
+    }
+
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        self.base.rem(&self.base.neg(elem), &self.modulo)
+    }
+
+    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        self.base.rem(&self.base.add(elem1, elem2), &self.modulo)
+    }
+
+    fn one(&self) -> Self::Elem {
+        self.one.clone()
+    }
+
+    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        self.base.rem(&self.base.mul(elem1, elem2), &self.modulo)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use num_traits::sign::Signed;
 
     #[test]
     fn div_rem_bigint() {
@@ -406,6 +538,7 @@ mod tests {
                 assert_eq!(q, ring.div(&n, &m));
                 assert_eq!(r, ring.rem(&n, &m));
                 assert_eq!(ring.is_zero(&r), ring.is_multiple_of(&n, &m));
+                assert_eq!(ring.is_zero(&q), ring.is_reduced(&n, &m));
             }
         }
 
@@ -458,12 +591,34 @@ mod tests {
 
                     assert_eq!(q2, q1.into());
                     assert_eq!(r2, r1.into());
+
+                    assert_eq!(
+                        ring1.is_multiple_of(&n1, &m1),
+                        ring2.is_multiple_of(&n2, &m2)
+                    );
+                    assert_eq!(ring1.is_reduced(&n1, &m1), ring2.is_reduced(&n2, &m2));
                 } else {
                     let result = std::panic::catch_unwind(|| {
                         ring1.div_rem(&n1, &m1);
                     });
                     assert!(result.is_err());
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn extended_gcd() {
+        let ring = Integers32();
+
+        for a in -10..10 {
+            for b in -10..10 {
+                let (g, x, y) = ring.extended_gcd(&a, &b);
+                println!("a:{}, b:{}, g:{}, x:{}, y:{}", a, b, g, x, y);
+                assert_eq!(g, a * x + b * y);
+                assert_eq!(g, ring.gcd(&a, &b));
+                assert!(ring.is_multiple_of(&a, &g));
+                assert!(ring.is_multiple_of(&b, &g));
             }
         }
     }
