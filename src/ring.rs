@@ -1,8 +1,11 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use num_bigint::{BigInt, Sign};
+//! A module that contains ring like structures.
+
+use num_bigint::BigInt;
 use num_integer::Integer;
+use num_traits::Signed;
 use num_traits::Zero;
 
 /// An arbitrary set of elements.
@@ -17,8 +20,8 @@ pub trait Domain {
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool;
 }
 
-/// The ring of integers whose elements are [BigInt](::num_bigint::bigint::BigInt)
-/// objects.
+/// The ring of integers whose elements are
+/// [BigInt](../../num_bigint/struct.BigInt.html) objects.
 #[derive(Clone, Debug, Default)]
 pub struct BigIntegers();
 
@@ -224,31 +227,93 @@ pub trait EuclideanDomain: RingWithIdentity {
         let gcd = self.gcd(elem1, elem2);
         self.is_unit(&gcd)
     }
+
+    /// Among all the associates of the given elem if there is a well defined
+    /// unique one (non-negative for integers, zero or monoic for polynomials),
+    /// then this method returns that one. In general this method returns the
+    /// given element.
+    fn normalize(&self, elem: &Self::Elem) -> Self::Elem {
+        elem.clone()
+    }
+}
+
+impl EuclideanDomain for BigIntegers {
+    fn div_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
+        if elem2.is_zero() {
+            (BigInt::zero(), elem1.clone())
+        } else {
+            let (div, rem) = elem1.div_rem(elem2);
+
+            if elem1.is_positive() && elem2.is_positive() {
+                let tmp = elem2 - &rem;
+                if rem > tmp {
+                    return (div + 1, -tmp);
+                }
+            } else if !elem1.is_positive() && !elem2.is_positive() {
+                let tmp = elem2 - &rem;
+                if rem <= tmp {
+                    return (div + 1, -tmp);
+                }
+            } else if elem1.is_positive() && !elem2.is_positive() {
+                let tmp = elem2 + &rem;
+                if -&rem < tmp {
+                    return (div - 1, tmp);
+                }
+            } else if !elem1.is_positive() && elem2.is_positive() {
+                let tmp = elem2 + &rem;
+                if -&rem >= tmp {
+                    return (div - 1, tmp);
+                }
+            }
+
+            (div, rem)
+        }
+    }
+
+    fn is_multiple_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        if elem2.is_zero() {
+            elem1.is_zero()
+        } else {
+            elem1.is_multiple_of(elem2)
+        }
+    }
+
+    fn normalize(&self, elem: &Self::Elem) -> Self::Elem {
+        elem.abs()
+    }
 }
 
 impl EuclideanDomain for Integers32 {
     fn div_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        let rem = self.rem(elem1, elem2);
-        let elem1 = i32::checked_sub(*elem1, rem).unwrap();
-        let div = elem1 / *elem2;
-        (rem, div)
-    }
-
-    fn div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        elem1 + elem2
-    }
-
-    fn rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        assert!(*elem2 != 0);
-        let elem2 = i32::checked_abs(*elem2).unwrap();
-
-        let elem1 = *elem1 % elem2;
-        if elem1 < 0 && elem1 + elem2 > 0 {
-            elem1 + elem2
-        } else if elem1 > 0 && elem1 - elem2 < 0 {
-            elem1 - elem2
+        if *elem2 == 0 {
+            (0, *elem1)
         } else {
-            elem1
+            let div = i32::checked_div(*elem1, *elem2).unwrap();
+            let rem = *elem1 - div * elem2;
+
+            if *elem1 >= 0 && *elem2 >= 0 {
+                let tmp = *elem2 - rem;
+                if rem > tmp {
+                    return (div + 1, -tmp);
+                }
+            } else if *elem1 < 0 && *elem2 < 0 {
+                let tmp = *elem2 - rem;
+                if rem <= tmp {
+                    return (div + 1, -tmp);
+                }
+            } else if *elem1 >= 0 && *elem2 < 0 {
+                let tmp = elem2 + rem;
+                if -rem < tmp {
+                    return (div - 1, tmp);
+                }
+            } else if *elem1 < 0 && *elem2 >= 0 {
+                let tmp = elem2 + rem;
+                if -rem >= tmp {
+                    return (div - 1, tmp);
+                }
+            }
+
+            (div, rem)
         }
     }
 
@@ -261,57 +326,58 @@ impl EuclideanDomain for Integers32 {
             *elem1 % *elem2 == 0
         }
     }
+
+    fn normalize(&self, elem: &Self::Elem) -> Self::Elem {
+        i32::checked_abs(*elem).unwrap()
+    }
 }
 
-impl EuclideanDomain for BigIntegers {
+impl EuclideanDomain for Integers64 {
     fn div_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        let sign2 = elem2.sign();
-        if sign2 == Sign::NoSign {
-            (BigInt::zero(), elem1.clone())
+        if *elem2 == 0 {
+            (0, *elem1)
         } else {
-            let sign1 = elem1.sign();
-            let (div, rem) = elem1.div_rem(elem2);
+            let div = i64::checked_div(*elem1, *elem2).unwrap();
+            let rem = *elem1 - div * elem2;
 
-            if sign1 == sign2 {
-                if (&rem + &rem - elem2).sign() == sign1 {
-                    return (div + 1i32, rem - elem2);
+            if *elem1 >= 0 && *elem2 >= 0 {
+                let tmp = *elem2 - rem;
+                if rem > tmp {
+                    return (div + 1, -tmp);
                 }
-            } else {
-                if (&rem + &rem + elem2).sign() == sign1 {
-                    return (div - 1i32, rem + elem2);
+            } else if *elem1 < 0 && *elem2 < 0 {
+                let tmp = *elem2 - rem;
+                if rem <= tmp {
+                    return (div + 1, -tmp);
+                }
+            } else if *elem1 >= 0 && *elem2 < 0 {
+                let tmp = elem2 + rem;
+                if -rem < tmp {
+                    return (div - 1, tmp);
+                }
+            } else if *elem1 < 0 && *elem2 >= 0 {
+                let tmp = elem2 + rem;
+                if -rem >= tmp {
+                    return (div - 1, tmp);
                 }
             }
+
             (div, rem)
         }
     }
 
-    fn rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let sign2 = elem2.sign();
-        if sign2 == Sign::NoSign {
-            elem1.clone()
+    fn is_multiple_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        if *elem2 == 0 {
+            *elem1 == 0
+        } else if *elem2 == -1 {
+            true
         } else {
-            let sign1 = elem1.sign();
-            let rem = elem1 % elem2;
-
-            if sign1 == sign2 {
-                if (&rem + &rem - elem2).sign() == sign1 {
-                    return rem - elem2;
-                }
-            } else {
-                if (&rem + &rem + elem2).sign() == sign1 {
-                    return rem + elem2;
-                }
-            }
-            rem
+            *elem1 % *elem2 == 0
         }
     }
 
-    fn is_multiple_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        if elem2.is_zero() {
-            elem1.is_zero()
-        } else {
-            elem1.is_multiple_of(elem2)
-        }
+    fn normalize(&self, elem: &Self::Elem) -> Self::Elem {
+        i64::checked_abs(*elem).unwrap()
     }
 }
 
@@ -324,9 +390,9 @@ mod tests {
     fn div_rem_bigint() {
         let ring = BigIntegers();
 
-        for n in -20..20 {
+        for n in -40..40 {
             let n: BigInt = n.into();
-            for m in -20..20 {
+            for m in -40..40 {
                 let m: BigInt = m.into();
                 let (q, r) = ring.div_rem(&n, &m);
                 println!("n={}, m={}, q={}, r={}", n, m, q, r);
@@ -334,9 +400,70 @@ mod tests {
                 assert!(r.abs() <= (&r + &m).abs());
                 assert!(r.abs() <= (&r - &m).abs());
 
+                assert!(m.is_zero() || &r + &r <= m.abs());
+                assert!(m.is_zero() || &r + &r > -m.abs());
+
                 assert_eq!(q, ring.div(&n, &m));
                 assert_eq!(r, ring.rem(&n, &m));
                 assert_eq!(ring.is_zero(&r), ring.is_multiple_of(&n, &m));
+            }
+        }
+
+        assert_eq!(ring.rem(&0.into(), &2.into()), 0.into());
+        assert_eq!(ring.rem(&1.into(), &2.into()), 1.into());
+
+        assert_eq!(ring.rem(&0.into(), &3.into()), 0.into());
+        assert_eq!(ring.rem(&1.into(), &3.into()), 1.into());
+        assert_eq!(ring.rem(&2.into(), &3.into()), (-1).into());
+
+        assert_eq!(ring.rem(&0.into(), &4.into()), 0.into());
+        assert_eq!(ring.rem(&1.into(), &4.into()), 1.into());
+        assert_eq!(ring.rem(&2.into(), &4.into()), 2.into());
+        assert_eq!(ring.rem(&3.into(), &4.into()), (-1).into());
+
+        assert_eq!(ring.rem(&0.into(), &(-2).into()), 0.into());
+        assert_eq!(ring.rem(&1.into(), &(-2).into()), 1.into());
+    }
+
+    #[test]
+    fn div_rem_int32() {
+        let ring1 = Integers32();
+        let ring2 = BigIntegers();
+
+        let mut elems: Vec<i32> = Default::default();
+        for i in 0..10 {
+            elems.push(i);
+            if i > 0 {
+                elems.push(-i);
+            }
+            elems.push(i32::MIN + i);
+            elems.push(i32::MAX - i);
+        }
+
+        let min2: BigInt = i32::MIN.into();
+        let max2: BigInt = i32::MAX.into();
+
+        for &n1 in elems.iter() {
+            let n2: BigInt = n1.into();
+            for &m1 in elems.iter() {
+                let m2: BigInt = m1.into();
+
+                let (q2, r2) = ring2.div_rem(&n2, &m2);
+                if min2 <= q2 && q2 <= max2 && min2 <= r2 && r2 <= max2 {
+                    let (q1, r1) = ring1.div_rem(&n1, &m1);
+                    println!(
+                        "n1={}, m1={}, q1={}, r1={}, q2={}, r2={}",
+                        n1, m1, q1, r1, q2, r2
+                    );
+
+                    assert_eq!(q2, q1.into());
+                    assert_eq!(r2, r1.into());
+                } else {
+                    let result = std::panic::catch_unwind(|| {
+                        ring1.div_rem(&n1, &m1);
+                    });
+                    assert!(result.is_err());
+                }
             }
         }
     }
