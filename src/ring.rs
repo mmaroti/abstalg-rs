@@ -199,6 +199,31 @@ pub trait EuclideanDomain: RingWithIdentity {
     fn are_associated(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         self.is_multiple_of(elem1, elem2) && self.is_multiple_of(elem2, elem1)
     }
+
+    /// Returns true if the given element has a multiplicative inverse,
+    /// that is, it is a divisor of the identity element.
+    fn is_unit(&self, elem: &Self::Elem) -> bool {
+        self.is_multiple_of(elem, &self.one())
+    }
+
+    /// Calculates the greatest common divisor of two elements using the
+    /// Euclidean algorithm.
+    fn gcd(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        let mut elem1 = elem1.clone();
+        let mut elem2 = elem2.clone();
+        while !self.is_zero(&elem2) {
+            let rem = self.rem(&elem1, &elem2);
+            elem1 = elem2;
+            elem2 = rem;
+        }
+        elem1
+    }
+
+    /// Checks if the given two elements are relative prime.
+    fn are_relative_prime(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        let gcd = self.gcd(elem1, elem2);
+        self.is_unit(&gcd)
+    }
 }
 
 impl EuclideanDomain for Integers32 {
