@@ -6,6 +6,9 @@ authors = ["Miklos Maroti <mmaroti@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/mmaroti/abstalg-rs/"
 license = "MIT"
+readme = "README.md"
+keywords = ["algebra", "ring", "field", "group", "lattice"]
+categories = ["mathematics", "science"]
 
 [dependencies]
 num = "0.3"
