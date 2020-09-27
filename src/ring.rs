@@ -3,6 +3,7 @@
 
 //! A module that contains ring like structures.
 
+use num::rational::Ratio;
 use num::{BigInt, BigRational, Integer, One, Signed, Zero};
 
 /// An arbitrary set of elements.
@@ -97,6 +98,39 @@ impl Domain for ModularInt64 {
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         elem1 == elem2
+    }
+}
+
+/// The field of fractions of an Euclidean ring. All elements are 
+/// represented in their normal form where the denominator is non-zero
+/// the numerator and denominator are relative prime, and the 
+pub struct Fractions<R: EuclideanRing> {
+    base: R,
+}
+
+impl<R: EuclideanRing> Fractions<R> {
+    /// Creates a new field of fractions from the give Euclidean ring.
+    pub fn new(base: R) -> Self {
+        Fractions { base }
+    }
+
+    /// Returns the base from which this field of created from.
+    pub fn base(&self) -> &R {
+        &self.base
+    }
+}
+
+impl<R: EuclideanRing> Domain for Fractions<R> {
+    type Elem = Ratio<R::Elem>;
+
+    fn contains(&self, elem: &Self::Elem) -> bool {
+        !self.base.is_zero(elem.denom())
+            && self.base.are_relative_primes(elem.numer(), elem.denom())
+    }
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.base.equals(elem1.numer(), elem2.numer())
+            && self.base.equals(elem1.denom(), elem2.denom())
     }
 }
 
@@ -823,6 +857,56 @@ impl<F: Field> EuclideanRing for F {
             elem1.clone()
         } else {
             self.zero()
+        }
+    }
+
+    fn is_multiple_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.is_zero(elem1) || !self.is_zero(elem2)
+    }
+
+    fn is_reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.is_zero(elem1) || self.is_zero(elem2)
+    }
+
+    fn are_associated(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.is_zero(elem1) == self.is_zero(elem2)
+    }
+
+    fn is_unit(&self, elem: &Self::Elem) -> bool {
+        !self.is_zero(elem)
+    }
+
+    fn gcd(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        if self.is_zero(elem1) && self.is_zero(elem2) {
+            self.zero()
+        } else {
+            self.one()
+        }
+    }
+
+    fn extended_gcd(
+        &self,
+        elem1: &Self::Elem,
+        elem2: &Self::Elem,
+    ) -> (Self::Elem, Self::Elem, Self::Elem) {
+        if !self.is_zero(elem1) {
+            (self.one(), self.inv(elem1), self.zero())
+        } else if !self.is_zero(elem2) {
+            (self.one(), self.zero(), self.inv(elem2))
+        } else {
+            (self.zero(), self.zero(), self.zero())
+        }
+    }
+
+    fn are_relative_primes(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        !self.is_zero(elem1) && !self.is_zero(elem2)
+    }
+
+    fn normalizer(&self, elem: &Self::Elem) -> Self::Elem {
+        if self.is_zero(elem) {
+            self.zero()
+        } else {
+            self.one()
         }
     }
 }
