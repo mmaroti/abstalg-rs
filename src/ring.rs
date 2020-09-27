@@ -3,13 +3,12 @@
 
 //! A module that contains ring like structures.
 
-use num::{BigInt, Integer, Signed, Zero};
-use std::fmt::Display;
+use num::{BigInt, BigRational, Integer, One, Signed, Zero};
 
 /// An arbitrary set of elements.
 pub trait Domain {
     /// The type of the elements of this domain.
-    type Elem: Clone + Display;
+    type Elem: Clone + std::fmt::Debug;
 
     /// Checks if the given element is a member of the domain.
     fn contains(&self, elem: &Self::Elem) -> bool;
@@ -19,11 +18,11 @@ pub trait Domain {
 }
 
 /// The ring of integers whose elements are
-/// [BigInt](../../num_bigint/struct.BigInt.html) objects.
+/// [BigInt](../../num/struct.BigInt.html) objects.
 #[derive(Clone, Debug, Default)]
-pub struct BigIntegers();
+pub struct Integers();
 
-impl Domain for BigIntegers {
+impl Domain for Integers {
     type Elem = BigInt;
 
     fn contains(&self, _elem: &Self::Elem) -> bool {
@@ -35,12 +34,12 @@ impl Domain for BigIntegers {
     }
 }
 
-/// The ring of integers whose elements are represented with 32-bit integers.
-/// Some operations will panic if the result cannot be represented in 32 bits.
+/// The ring of integers whose elements are represented with 32-bit signed
+/// integers. Operations will panic if the result cannot be represented.
 #[derive(Clone, Debug, Default)]
-pub struct Integers32();
+pub struct PartialInt32();
 
-impl Domain for Integers32 {
+impl Domain for PartialInt32 {
     type Elem = i32;
 
     fn contains(&self, _elem: &Self::Elem) -> bool {
@@ -52,16 +51,99 @@ impl Domain for Integers32 {
     }
 }
 
-/// The ring of integers whose elements are represented with 64-bit integers.
-/// Some operations will panic if the result cannot be represented in 64 bits.
+/// The ring of integers whose elements are represented with 64-bit signed
+/// integers. Operations will panic if the result cannot be represented.
 #[derive(Clone, Debug, Default)]
-pub struct Integers64();
+pub struct PartialInt64();
 
-impl Domain for Integers64 {
+impl Domain for PartialInt64 {
     type Elem = i64;
 
     fn contains(&self, _elem: &Self::Elem) -> bool {
         true
+    }
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        elem1 == elem2
+    }
+}
+
+/// The ring of integers modulo 2^32 whose elements are represented with
+/// signed 32-bit integers. All operations will wrap around.
+pub struct ModularInt32();
+
+impl Domain for ModularInt32 {
+    type Elem = i32;
+
+    fn contains(&self, _elem: &Self::Elem) -> bool {
+        true
+    }
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        elem1 == elem2
+    }
+}
+
+/// The ring of integers modulo 2^64 whose elements are represented with
+/// signed 64-bit integers. All operations will wrap around.
+pub struct ModularInt64();
+
+impl Domain for ModularInt64 {
+    type Elem = i64;
+
+    fn contains(&self, _elem: &Self::Elem) -> bool {
+        true
+    }
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        elem1 == elem2
+    }
+}
+
+/// The field of rational numbers whose elements are
+/// [BigRational](../../num/type.BigRational.html) objects.
+#[derive(Clone, Debug, Default)]
+pub struct Rationals();
+
+impl Domain for Rationals {
+    type Elem = BigRational;
+
+    fn contains(&self, _elem: &Self::Elem) -> bool {
+        true
+    }
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        elem1 == elem2
+    }
+}
+
+/// The field of real numbers approximated by 32-bit floating point
+/// values. NaN and infinity values are not considered as members,
+/// so all operations resulting one of these will panic.
+pub struct ApproxFloat32();
+
+impl Domain for ApproxFloat32 {
+    type Elem = f32;
+
+    fn contains(&self, elem: &Self::Elem) -> bool {
+        elem.is_finite()
+    }
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        elem1 == elem2
+    }
+}
+
+/// The field of real numbers approximated by 64-bit floating point
+/// values. NaN and infinity values are not considered as members,
+/// so all operations resulting one of these will panic.
+pub struct ApproxFloat64();
+
+impl Domain for ApproxFloat64 {
+    type Elem = f64;
+
+    fn contains(&self, elem: &Self::Elem) -> bool {
+        elem.is_finite()
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
@@ -105,9 +187,9 @@ pub trait RingWithIdentity: Domain {
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
 }
 
-impl RingWithIdentity for BigIntegers {
+impl RingWithIdentity for Integers {
     fn zero(&self) -> Self::Elem {
-        0.into()
+        Zero::zero()
     }
 
     fn neg(&self, elem: &Self::Elem) -> Self::Elem {
@@ -119,7 +201,7 @@ impl RingWithIdentity for BigIntegers {
     }
 
     fn one(&self) -> Self::Elem {
-        1.into()
+        One::one()
     }
 
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
@@ -127,7 +209,7 @@ impl RingWithIdentity for BigIntegers {
     }
 }
 
-impl RingWithIdentity for Integers32 {
+impl RingWithIdentity for PartialInt32 {
     fn zero(&self) -> Self::Elem {
         0
     }
@@ -149,7 +231,7 @@ impl RingWithIdentity for Integers32 {
     }
 }
 
-impl RingWithIdentity for Integers64 {
+impl RingWithIdentity for PartialInt64 {
     fn zero(&self) -> Self::Elem {
         0
     }
@@ -171,28 +253,150 @@ impl RingWithIdentity for Integers64 {
     }
 }
 
-/// An Euclidean domain is an integral domain where the Euclidean algorithm
+impl RingWithIdentity for ModularInt32 {
+    fn zero(&self) -> Self::Elem {
+        0
+    }
+
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        i32::wrapping_neg(*elem)
+    }
+
+    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        i32::wrapping_add(*elem1, *elem2)
+    }
+
+    fn one(&self) -> Self::Elem {
+        1
+    }
+
+    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        i32::wrapping_mul(*elem1, *elem2)
+    }
+}
+
+impl RingWithIdentity for ModularInt64 {
+    fn zero(&self) -> Self::Elem {
+        0
+    }
+
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        i64::wrapping_neg(*elem)
+    }
+
+    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        i64::wrapping_add(*elem1, *elem2)
+    }
+
+    fn one(&self) -> Self::Elem {
+        1
+    }
+
+    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        i64::wrapping_mul(*elem1, *elem2)
+    }
+}
+
+impl RingWithIdentity for Rationals {
+    fn zero(&self) -> Self::Elem {
+        Zero::zero()
+    }
+
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        -elem
+    }
+
+    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        elem1 + elem2
+    }
+
+    fn one(&self) -> Self::Elem {
+        One::one()
+    }
+
+    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        elem1 * elem2
+    }
+}
+
+impl RingWithIdentity for ApproxFloat32 {
+    fn zero(&self) -> Self::Elem {
+        0.0
+    }
+
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        let r = -elem;
+        assert!(r.is_finite());
+        r
+    }
+
+    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        let r = elem1 + elem2;
+        assert!(r.is_finite());
+        r
+    }
+
+    fn one(&self) -> Self::Elem {
+        1.0
+    }
+
+    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        let r = elem1 * elem2;
+        assert!(r.is_finite());
+        r
+    }
+}
+
+impl RingWithIdentity for ApproxFloat64 {
+    fn zero(&self) -> Self::Elem {
+        0.0
+    }
+
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        let r = -elem;
+        assert!(r.is_finite());
+        r
+    }
+
+    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        let r = elem1 + elem2;
+        assert!(r.is_finite());
+        r
+    }
+
+    fn one(&self) -> Self::Elem {
+        1.0
+    }
+
+    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        let r = elem1 * elem2;
+        assert!(r.is_finite());
+        r
+    }
+}
+
+/// An Euclidean ring is an integral domain where the Euclidean algorithm
 /// can be implemented. Typical examples are the rings of integers and
 /// polynomials.
-pub trait EuclideanDomain: RingWithIdentity {
+pub trait EuclideanRing: RingWithIdentity {
     /// Performs the euclidean division algorithm dividing the first elem
     /// with the second one and returning the quotient and the remainder.
     /// The remainder should be the one with the least norm among all possible
     /// ones so that the Euclidean algorithm runs fast. The second element
     /// may be zero, in which case the quotient shall be zero and the
     /// remainder be the first element.
-    fn div_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem);
+    fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem);
 
-    /// Performs the division just like the [div_rem](EuclideanDomain::div_rem)
+    /// Performs the division just like the [quo_rem](EuclideanRing::quo_rem)
     /// method would do and returns the quotient.
-    fn div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        self.div_rem(elem1, elem2).0
+    fn quo(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        self.quo_rem(elem1, elem2).0
     }
 
-    /// Performs the division just like the [div_rem](EuclideanDomain::div_rem)
+    /// Performs the division just like the [quo_rem](EuclideanRing::quo_rem)
     /// method would do and returns the remainder
     fn rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        self.div_rem(elem1, elem2).1
+        self.quo_rem(elem1, elem2).1
     }
 
     /// Returns true if the first element is a multiple of the second one.
@@ -203,7 +407,7 @@ pub trait EuclideanDomain: RingWithIdentity {
     /// Returns true if the first element is its own remainder when the
     /// divided by the second one (so the quotient is zero).
     fn is_reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.is_zero(&self.div(elem1, elem2))
+        self.is_zero(&self.quo(elem1, elem2))
     }
 
     /// Returns true if the two elements are associated (divide each other)
@@ -241,15 +445,15 @@ pub trait EuclideanDomain: RingWithIdentity {
         if self.is_zero(elem2) {
             (elem1.clone(), self.one(), self.zero())
         } else {
-            let (div, rem) = self.div_rem(elem1, elem2);
+            let (quo, rem) = self.quo_rem(elem1, elem2);
             let (gcd, x, y) = self.extended_gcd(elem2, &rem);
-            let z = self.sub(&x, &self.mul(&y, &div));
+            let z = self.sub(&x, &self.mul(&y, &quo));
             (gcd, y, z)
         }
     }
 
     /// Checks if the given two elements are relative prime.
-    fn are_relative_prime(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+    fn are_relative_primes(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         let gcd = self.gcd(elem1, elem2);
         self.is_unit(&gcd)
     }
@@ -263,36 +467,36 @@ pub trait EuclideanDomain: RingWithIdentity {
     }
 }
 
-impl EuclideanDomain for BigIntegers {
-    fn div_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
+impl EuclideanRing for Integers {
+    fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
         if elem2.is_zero() {
             (BigInt::zero(), elem1.clone())
         } else {
-            let (div, rem) = elem1.div_rem(elem2);
+            let (quo, rem) = elem1.div_rem(elem2);
 
             if elem1.is_positive() && elem2.is_positive() {
                 let tmp = elem2 - &rem;
                 if rem > tmp {
-                    return (div + 1, -tmp);
+                    return (quo + 1, -tmp);
                 }
             } else if !elem1.is_positive() && !elem2.is_positive() {
                 let tmp = elem2 - &rem;
                 if rem <= tmp {
-                    return (div + 1, -tmp);
+                    return (quo + 1, -tmp);
                 }
             } else if elem1.is_positive() && !elem2.is_positive() {
                 let tmp = elem2 + &rem;
                 if -&rem < tmp {
-                    return (div - 1, tmp);
+                    return (quo - 1, tmp);
                 }
             } else if !elem1.is_positive() && elem2.is_positive() {
                 let tmp = elem2 + &rem;
                 if -&rem >= tmp {
-                    return (div - 1, tmp);
+                    return (quo - 1, tmp);
                 }
             }
 
-            (div, rem)
+            (quo, rem)
         }
     }
 
@@ -323,37 +527,37 @@ impl EuclideanDomain for BigIntegers {
     }
 }
 
-impl EuclideanDomain for Integers32 {
-    fn div_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
+impl EuclideanRing for PartialInt32 {
+    fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
         if *elem2 == 0 {
             (0, *elem1)
         } else {
-            let div = i32::checked_div(*elem1, *elem2).unwrap();
-            let rem = *elem1 - div * elem2;
+            let quo = i32::checked_div(*elem1, *elem2).unwrap();
+            let rem = *elem1 - quo * elem2;
 
             if *elem1 >= 0 && *elem2 >= 0 {
                 let tmp = *elem2 - rem;
                 if rem > tmp {
-                    return (div + 1, -tmp);
+                    return (quo + 1, -tmp);
                 }
             } else if *elem1 < 0 && *elem2 < 0 {
                 let tmp = *elem2 - rem;
                 if rem <= tmp {
-                    return (div + 1, -tmp);
+                    return (quo + 1, -tmp);
                 }
             } else if *elem1 >= 0 && *elem2 < 0 {
                 let tmp = elem2 + rem;
                 if -rem < tmp {
-                    return (div - 1, tmp);
+                    return (quo - 1, tmp);
                 }
             } else if *elem1 < 0 && *elem2 >= 0 {
                 let tmp = elem2 + rem;
                 if -rem >= tmp {
-                    return (div - 1, tmp);
+                    return (quo - 1, tmp);
                 }
             }
 
-            (div, rem)
+            (quo, rem)
         }
     }
 
@@ -387,37 +591,37 @@ impl EuclideanDomain for Integers32 {
     }
 }
 
-impl EuclideanDomain for Integers64 {
-    fn div_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
+impl EuclideanRing for PartialInt64 {
+    fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
         if *elem2 == 0 {
             (0, *elem1)
         } else {
-            let div = i64::checked_div(*elem1, *elem2).unwrap();
-            let rem = *elem1 - div * elem2;
+            let quo = i64::checked_div(*elem1, *elem2).unwrap();
+            let rem = *elem1 - quo * elem2;
 
             if *elem1 >= 0 && *elem2 >= 0 {
                 let tmp = *elem2 - rem;
                 if rem > tmp {
-                    return (div + 1, -tmp);
+                    return (quo + 1, -tmp);
                 }
             } else if *elem1 < 0 && *elem2 < 0 {
                 let tmp = *elem2 - rem;
                 if rem <= tmp {
-                    return (div + 1, -tmp);
+                    return (quo + 1, -tmp);
                 }
             } else if *elem1 >= 0 && *elem2 < 0 {
                 let tmp = elem2 + rem;
                 if -rem < tmp {
-                    return (div - 1, tmp);
+                    return (quo - 1, tmp);
                 }
             } else if *elem1 < 0 && *elem2 >= 0 {
                 let tmp = elem2 + rem;
                 if -rem >= tmp {
-                    return (div - 1, tmp);
+                    return (quo - 1, tmp);
                 }
             }
 
-            (div, rem)
+            (quo, rem)
         }
     }
 
@@ -451,37 +655,37 @@ impl EuclideanDomain for Integers64 {
     }
 }
 
-/// A quotient ring over an Euclidean domain by a principal ideal.
+/// A quotient ring of an Euclidean ring by a principal ideal.
 #[derive(Clone, Debug, Default)]
-pub struct QuotientRing<RING: EuclideanDomain> {
-    base: RING,
-    modulo: RING::Elem,
-    one: RING::Elem,
+pub struct QuotientRing<R: EuclideanRing> {
+    base: R,
+    modulo: R::Elem,
+    one: R::Elem,
 }
 
-impl<RING: EuclideanDomain> QuotientRing<RING> {
-    /// Creates a new quotient ring from the given Euclidean domain and
+impl<R: EuclideanRing> QuotientRing<R> {
+    /// Creates a new quotient ring from the given Euclidean ring and
     /// one of its element.
-    pub fn new(base: RING, modulo: RING::Elem) -> Self {
+    pub fn new(base: R, modulo: R::Elem) -> Self {
         assert!(base.contains(&modulo));
         // if the quotient is trivial, then the identity element becomes zero.
-        let one = base.div(&base.one(), &modulo);
+        let one = base.quo(&base.one(), &modulo);
         QuotientRing { base, modulo, one }
     }
 
     /// Returns the base ring from which this ring was constructed.
-    pub fn base(&self) -> &RING {
+    pub fn base(&self) -> &R {
         &self.base
     }
 
     /// Returns the modulo element from which this ring was constructed.
-    pub fn modulo(&self) -> &RING::Elem {
+    pub fn modulo(&self) -> &R::Elem {
         &self.modulo
     }
 }
 
-impl<RING: EuclideanDomain> Domain for QuotientRing<RING> {
-    type Elem = RING::Elem;
+impl<R: EuclideanRing> Domain for QuotientRing<R> {
+    type Elem = R::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
         self.base.is_reduced(elem, &self.modulo)
@@ -492,7 +696,7 @@ impl<RING: EuclideanDomain> Domain for QuotientRing<RING> {
     }
 }
 
-impl<RING: EuclideanDomain> RingWithIdentity for QuotientRing<RING> {
+impl<R: EuclideanRing> RingWithIdentity for QuotientRing<R> {
     fn zero(&self) -> Self::Elem {
         self.base.zero()
     }
@@ -514,19 +718,179 @@ impl<RING: EuclideanDomain> RingWithIdentity for QuotientRing<RING> {
     }
 }
 
+/// A quotient field of an Euclidean ring by a principal ideal
+/// generated by an irreducible (prime) element.
+#[derive(Clone, Debug, Default)]
+pub struct QuotientField<R: EuclideanRing> {
+    base: R,
+    modulo: R::Elem,
+}
+
+impl<R: EuclideanRing> QuotientField<R> {
+    /// Creates a field from the given Euclidean ring and one of
+    /// its irreducible (prime) element. This method does not check
+    /// that the modulo is indeed irreducible. If this fails, then
+    /// calculating the multiplicative inverse of some elements
+    /// may panic.
+    pub fn new(base: R, modulo: R::Elem) -> Self {
+        assert!(base.contains(&modulo));
+        let one = base.one();
+        assert!(base.is_zero(&base.rem(&one, &one)));
+        QuotientField { base, modulo }
+    }
+
+    /// Returns the base ring from which this field was constructed.
+    pub fn base(&self) -> &R {
+        &self.base
+    }
+
+    /// Returns the modulo element from which this field was constructed.
+    pub fn modulo(&self) -> &R::Elem {
+        &self.modulo
+    }
+}
+
+impl<R: EuclideanRing> Domain for QuotientField<R> {
+    type Elem = R::Elem;
+
+    fn contains(&self, elem: &Self::Elem) -> bool {
+        self.base.is_reduced(elem, &self.modulo)
+    }
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.base.equals(elem1, elem2)
+    }
+}
+
+impl<R: EuclideanRing> RingWithIdentity for QuotientField<R> {
+    fn zero(&self) -> Self::Elem {
+        self.base.zero()
+    }
+
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        self.base.rem(&self.base.neg(elem), &self.modulo)
+    }
+
+    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        self.base.rem(&self.base.add(elem1, elem2), &self.modulo)
+    }
+
+    fn one(&self) -> Self::Elem {
+        self.base.one()
+    }
+
+    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        self.base.rem(&self.base.mul(elem1, elem2), &self.modulo)
+    }
+}
+
+/// A field is a commutative ring with identity where each non-zero element
+/// has a multiplicative inverse. Typical examples are the real, complex and
+/// rational numbers, and finite fields constructed from an Euclidean ring
+/// and one of its irreducible elements. All fields are Euclidean rings
+/// themselves, which will be automatically derived.
+pub trait Field: RingWithIdentity {
+    /// Returns the multiplicative inverse of the given non-zero element.
+    /// This method panics for the zero element.
+    fn inv(&self, elem: &Self::Elem) -> Self::Elem;
+
+    /// Returns the quotient of the two elements in the field. This method
+    /// panics if the second element is zero.
+    fn div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        self.mul(elem1, &self.inv(elem2))
+    }
+}
+
+impl<F: Field> EuclideanRing for F {
+    fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
+        if self.is_zero(elem2) {
+            (self.zero(), elem1.clone())
+        } else {
+            (self.div(elem1, elem2), self.zero())
+        }
+    }
+
+    fn quo(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        if self.is_zero(elem2) {
+            self.zero()
+        } else {
+            self.div(elem1, elem2)
+        }
+    }
+
+    fn rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        if self.is_zero(elem2) {
+            elem1.clone()
+        } else {
+            self.zero()
+        }
+    }
+}
+
+impl<R: EuclideanRing> Field for QuotientField<R> {
+    fn inv(&self, elem: &Self::Elem) -> Self::Elem {
+        let (g, _, mut r) = self.base.extended_gcd(&self.modulo, elem);
+        if !self.base.is_one(&g) {
+            let (a, b) = self.base.quo_rem(&self.base.one(), &g);
+            assert!(self.base.is_zero(&b), "modulo was not irreducible");
+            r = self.base.mul(&r, &a);
+        }
+        let r = self.base.rem(&r, &self.modulo);
+        r
+    }
+}
+
+impl Field for Rationals {
+    fn inv(&self, elem: &Self::Elem) -> Self::Elem {
+        elem.recip()
+    }
+
+    fn div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        elem1 / elem2
+    }
+}
+
+impl Field for ApproxFloat32 {
+    fn inv(&self, elem: &Self::Elem) -> Self::Elem {
+        let r = 1.0 / elem;
+        assert!(r.is_finite());
+        r
+    }
+
+    fn div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        let r = elem1 / elem2;
+        assert!(r.is_finite());
+        r
+    }
+}
+
+impl Field for ApproxFloat64 {
+    fn inv(&self, elem: &Self::Elem) -> Self::Elem {
+        let r = 1.0 / elem;
+        assert!(r.is_finite());
+        r
+    }
+
+    fn div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        let r = elem1 / elem2;
+        assert!(r.is_finite());
+        r
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn div_rem_bigint() {
-        let ring = BigIntegers();
+    fn quo_rem_bigint() {
+        let ring = Integers();
 
         for n in -40..40 {
             let n: BigInt = n.into();
             for m in -40..40 {
                 let m: BigInt = m.into();
-                let (q, r) = ring.div_rem(&n, &m);
+                let (q, r) = ring.quo_rem(&n, &m);
                 println!("n={}, m={}, q={}, r={}", n, m, q, r);
                 assert_eq!(n, &m * &q + &r);
                 assert!(r.abs() <= (&r + &m).abs());
@@ -535,7 +899,7 @@ mod tests {
                 assert!(m.is_zero() || &r + &r <= m.abs());
                 assert!(m.is_zero() || &r + &r > -m.abs());
 
-                assert_eq!(q, ring.div(&n, &m));
+                assert_eq!(q, ring.quo(&n, &m));
                 assert_eq!(r, ring.rem(&n, &m));
                 assert_eq!(ring.is_zero(&r), ring.is_multiple_of(&n, &m));
                 assert_eq!(ring.is_zero(&q), ring.is_reduced(&n, &m));
@@ -559,9 +923,9 @@ mod tests {
     }
 
     #[test]
-    fn div_rem_int32() {
-        let ring1 = Integers32();
-        let ring2 = BigIntegers();
+    fn quo_rem_int32() {
+        let ring1 = PartialInt32();
+        let ring2 = Integers();
 
         let mut elems: Vec<i32> = Default::default();
         for i in 0..10 {
@@ -581,9 +945,9 @@ mod tests {
             for &m1 in elems.iter() {
                 let m2: BigInt = m1.into();
 
-                let (q2, r2) = ring2.div_rem(&n2, &m2);
+                let (q2, r2) = ring2.quo_rem(&n2, &m2);
                 if min2 <= q2 && q2 <= max2 && min2 <= r2 && r2 <= max2 {
-                    let (q1, r1) = ring1.div_rem(&n1, &m1);
+                    let (q1, r1) = ring1.quo_rem(&n1, &m1);
                     println!(
                         "n1={}, m1={}, q1={}, r1={}, q2={}, r2={}",
                         n1, m1, q1, r1, q2, r2
@@ -599,7 +963,7 @@ mod tests {
                     assert_eq!(ring1.is_reduced(&n1, &m1), ring2.is_reduced(&n2, &m2));
                 } else {
                     let result = std::panic::catch_unwind(|| {
-                        ring1.div_rem(&n1, &m1);
+                        ring1.quo_rem(&n1, &m1);
                     });
                     assert!(result.is_err());
                 }
@@ -609,7 +973,7 @@ mod tests {
 
     #[test]
     fn extended_gcd() {
-        let ring = Integers32();
+        let ring = PartialInt32();
 
         for a in -10..10 {
             for b in -10..10 {
@@ -619,6 +983,21 @@ mod tests {
                 assert_eq!(g, ring.gcd(&a, &b));
                 assert!(ring.is_multiple_of(&a, &g));
                 assert!(ring.is_multiple_of(&b, &g));
+            }
+        }
+    }
+
+    #[test]
+    fn field_1721() {
+        let field = QuotientField::new(PartialInt32(), 1721);
+
+        for a in -860..860 {
+            assert!(field.contains(&a));
+            if a != 0 {
+                let b = field.inv(&a);
+                assert!(field.contains(&b));
+                println!("{} {}", a, b);
+                assert!(field.is_one(&field.mul(&a, &b)));
             }
         }
     }
