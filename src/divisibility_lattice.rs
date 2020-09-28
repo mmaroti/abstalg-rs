@@ -4,7 +4,7 @@
 use crate::{BoundedLattice, DistributiveLattice, Domain, EuclideanDomain, Lattice};
 
 /// The lattice of divisibility of an Euclidean domain where the elements are
-/// the unique representative of associate classes, the meet is the greatest
+/// the unique representatives of associate classes, the meet is the greatest
 /// common divisor, the join is the least common multiple, the largest element
 /// is zero and the least element is one.
 #[derive(Clone, Debug, Default)]

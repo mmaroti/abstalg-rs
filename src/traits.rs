@@ -56,10 +56,17 @@ pub trait UnitaryRing: Domain {
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
 }
 
+/// An integral domain is a commutative unitary ring in which the product of
+/// non-zero elements are non-zero. This trait not add any new operations, just
+/// marks the properties of the ring. A typical examples are the integers, and
+/// the ring of polynomials with integer coefficients, which is not an
+/// Euclidean domain.
+pub trait IntegralDomain: UnitaryRing {}
+
 /// An Euclidean domain is an integral domain where the Euclidean algorithm
 /// can be implemented. Typical examples are the rings of integers and
 /// polynomials.
-pub trait EuclideanDomain: UnitaryRing {
+pub trait EuclideanDomain: IntegralDomain {
     /// Performs the euclidean division algorithm dividing the first elem
     /// with the second one and returning the quotient and the remainder.
     /// The remainder should be the one with the least norm among all possible

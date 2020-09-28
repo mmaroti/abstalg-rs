@@ -2,27 +2,28 @@
 // Licensed under the MIT license (see LICENSE)
 
 mod traits;
-pub use traits::{
-    BoundedLattice, DistributiveLattice, Domain, EuclideanDomain, Field, Lattice, UnitaryRing,
-};
+pub use traits::*;
 
 mod integers;
-pub use integers::Integers;
+pub use integers::*;
 
 mod checked_ints;
-pub use checked_ints::CheckedInts;
+pub use checked_ints::*;
 
 mod modular_ints;
-pub use modular_ints::ModularInts;
+pub use modular_ints::*;
 
 mod approx_floats;
-pub use approx_floats::ApproxFloats;
+pub use approx_floats::*;
 
 mod quotient_ring;
-pub use quotient_ring::QuotientRing;
+pub use quotient_ring::*;
 
 mod quotient_field;
-pub use quotient_field::QuotientField;
+pub use quotient_field::*;
 
 mod divisibility_lattice;
-pub use divisibility_lattice::DivisibilityLattice;
+pub use divisibility_lattice::*;
+
+mod polynomials;
+pub use polynomials::*;

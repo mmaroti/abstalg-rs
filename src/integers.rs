@@ -1,7 +1,7 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{Domain, EuclideanDomain, Lattice, DistributiveLattice, UnitaryRing};
+use crate::{DistributiveLattice, Domain, EuclideanDomain, IntegralDomain, Lattice, UnitaryRing};
 use num::{BigInt, Integer, One, Signed, Zero};
 
 /// The set of integers whose elements are
@@ -35,6 +35,8 @@ impl UnitaryRing for Integers {
         elem1 * elem2
     }
 }
+
+impl IntegralDomain for Integers {}
 
 impl EuclideanDomain for Integers {
     fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {

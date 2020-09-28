@@ -1,14 +1,14 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{DistributiveLattice, Domain, EuclideanDomain, Lattice, UnitaryRing};
+use crate::{DistributiveLattice, Domain, EuclideanDomain, IntegralDomain, Lattice, UnitaryRing};
 use num::{PrimInt, Signed};
 use std::convert::From;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
 /// The set of integers whose elements are stored in a primitive signed
-/// integer types. This structure is functionally equivalent to the set
+/// integer type. This structure is functionally equivalent to the set
 /// of all integers, but some operations are going to panic if the
 /// mathematical result cannot be represented in the primitive type.
 /// The lattice order is the normal total order, which is not bounded.
@@ -63,6 +63,8 @@ where
         elem1.checked_mul(elem2).unwrap()
     }
 }
+
+impl<E> IntegralDomain for CheckedInts<E> where E: PrimInt + Signed + Debug + From<i8> {}
 
 impl<E> EuclideanDomain for CheckedInts<E>
 where
@@ -124,7 +126,7 @@ where
         if *elem < 0.into() {
             (self.neg(elem), (-1).into())
         } else {
-            (elem.clone(), 1.into())
+            (*elem, 1.into())
         }
     }
 }
