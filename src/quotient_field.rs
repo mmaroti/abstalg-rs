@@ -11,6 +11,30 @@ pub struct QuotientField<R: EuclideanDomain> {
     modulo: R::Elem,
 }
 
+/// The 2-element field represented as residue classes of integers modulo 2.
+pub const GF_2: QuotientField<crate::CheckedInts<i8>> = QuotientField {
+    base: crate::INT8,
+    modulo: 2,
+};
+
+/// The 3-element field represented as residue classes of integers modulo 3.
+pub const GF_3: QuotientField<crate::CheckedInts<i8>> = QuotientField {
+    base: crate::INT8,
+    modulo: 3,
+};
+
+/// The 5-element field represented as residue classes of integers modulo 5.
+pub const GF_5: QuotientField<crate::CheckedInts<i8>> = QuotientField {
+    base: crate::INT8,
+    modulo: 5,
+};
+
+/// The 5-element field represented as residue classes of integers modulo 7.
+pub const GF_7: QuotientField<crate::CheckedInts<i8>> = QuotientField {
+    base: crate::INT8,
+    modulo: 7,
+};
+
 impl<R: EuclideanDomain> QuotientField<R> {
     /// Creates a field from the given Euclidean domain and one of
     /// its irreducible (prime) element. This method does not check
@@ -100,12 +124,10 @@ impl<R: EuclideanDomain> Field for QuotientField<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::CheckedInts;
 
     #[test]
     fn field_1721() {
-        let ring: CheckedInts<i32> = Default::default();
-        let field = QuotientField::new(ring, 1721);
+        let field = QuotientField::new(crate::INT32, 1721);
 
         for a in -860..860 {
             assert!(field.contains(&a));

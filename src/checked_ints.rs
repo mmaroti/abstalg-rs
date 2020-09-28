@@ -20,6 +20,30 @@ where
     phantom: PhantomData<E>,
 }
 
+/// The Euclidean ring of integers with `i8` primitive values and checked
+/// operations.
+pub const INT8: CheckedInts<i8> = CheckedInts {
+    phantom: PhantomData,
+};
+
+/// The Euclidean ring of integers with `i16` primitive values and checked
+/// operations.
+pub const INT16: CheckedInts<i16> = CheckedInts {
+    phantom: PhantomData,
+};
+
+/// The Euclidean ring of integers with `i32` primitive values and checked
+/// operations.
+pub const INT32: CheckedInts<i32> = CheckedInts {
+    phantom: PhantomData,
+};
+
+/// The Euclidean ring of integers with `i64` primitive values and checked
+/// operations.
+pub const INT64: CheckedInts<i64> = CheckedInts {
+    phantom: PhantomData,
+};
+
 impl<E> Domain for CheckedInts<E>
 where
     E: PrimInt + Signed + Debug + From<i8>,

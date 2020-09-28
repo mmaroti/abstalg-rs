@@ -10,6 +10,9 @@ use num::{BigInt, Integer, One, Signed, Zero};
 #[derive(Clone, Debug, Default)]
 pub struct Integers();
 
+/// The Euclidean ring of integers with arbitrary large values.
+pub const INT: Integers = Integers();
+
 impl Domain for Integers {
     type Elem = BigInt;
 }

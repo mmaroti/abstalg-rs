@@ -14,6 +14,17 @@ where
     base: R,
 }
 
+/// The Euclidean ring of polynomials over the 2-element field.
+pub const POLY_GF_2: Polynomials<crate::QuotientField<crate::CheckedInts<i8>>> =
+    Polynomials { base: crate::GF_2 };
+
+/// The Euclidean ring of polynomials over the 3-element field.
+pub const POLY_GF_3: Polynomials<crate::QuotientField<crate::CheckedInts<i8>>> =
+    Polynomials { base: crate::GF_3 };
+
+/// The integral ring of polynomials over the ring of integers.
+pub const POLY_INT: Polynomials<crate::Integers> = Polynomials { base: crate::INT };
+
 impl<R: UnitaryRing> Polynomials<R> {
     /// Creates a new ring of polynomials over the given ring. The ring cannot
     /// be trivial, that is one must be different from zero.
