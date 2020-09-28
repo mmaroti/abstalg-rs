@@ -93,7 +93,7 @@ pub trait EuclideanDomain: UnitaryRing {
     }
 
     /// Returns true if the two elements are associated (divide each other)
-    fn are_associated(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+    fn are_associates(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         self.is_multiple_of(elem1, elem2) && self.is_multiple_of(elem2, elem1)
     }
 
@@ -102,6 +102,12 @@ pub trait EuclideanDomain: UnitaryRing {
     fn is_unit(&self, elem: &Self::Elem) -> bool {
         self.is_multiple_of(elem, &self.one())
     }
+
+    /// We assume, that among all the associates of the given elem there must
+    /// be a well defined unique one (non-negative for integers, zero or monoic
+    /// for polynomials). This method returns that representative and the unit
+    /// element whose product with the given element is the representative.
+    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem);
 
     /// Calculates the greatest common divisor of two elements using the
     /// Euclidean algorithm.
@@ -114,6 +120,13 @@ pub trait EuclideanDomain: UnitaryRing {
             elem2 = rem;
         }
         elem1
+    }
+
+    /// Calculates the lest common divisor of the two elements.
+    fn lcm(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        let a = self.gcd(elem1, elem2);
+        let a = self.quo(elem1, &a);
+        self.mul(&a, elem2)
     }
 
     /// Performs the extended Euclidean algorithm which returns the greatest
@@ -139,21 +152,13 @@ pub trait EuclideanDomain: UnitaryRing {
         let gcd = self.gcd(elem1, elem2);
         self.is_unit(&gcd)
     }
-
-    /// Among all the associates of the given elem if there is a well defined
-    /// unique one (non-negative for integers, zero or monoic for polynomials),
-    /// then this method returns quotient of that unique element and the input
-    /// one. In general, this method returns one.
-    fn normalizer(&self, _elem: &Self::Elem) -> Self::Elem {
-        self.one()
-    }
 }
 
 /// A field is a commutative ring with identity where each non-zero element
 /// has a multiplicative inverse. Typical examples are the real, complex and
 /// rational numbers, and finite fields constructed from an Euclidean domain
 /// and one of its irreducible elements. All fields are Euclidean domains
-/// themselves, which will be automatically derived.
+/// themselves, with a rather trivial structure.
 pub trait Field: EuclideanDomain {
     /// Returns the multiplicative inverse of the given non-zero element.
     /// This method panics for the zero element.
@@ -165,3 +170,34 @@ pub trait Field: EuclideanDomain {
         self.mul(elem1, &self.inv(elem2))
     }
 }
+
+/// A set where the join and meet of elements can be calculated. Typical
+/// examples are the total orders of integers or the divisibility relation
+/// on the associate classes of an Euclidean domain.
+pub trait Lattice: Domain {
+    /// Returns the largest element that is less than or equal to both given
+    /// elements.
+    fn meet(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
+
+    /// Returns the smallest element that is greater than or equal to both
+    /// given elements.
+    fn join(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
+
+    /// Returns true if the first element is less than or equal to the
+    /// second one in the lattice order.
+    fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        &self.meet(elem1, elem2) == elem1
+    }
+}
+
+/// A lattice that has a largest and smallest element.
+pub trait BoundedLattice: Lattice {
+    /// Returns the largest element of the lattice.
+    fn max(&self) -> Self::Elem;
+
+    /// Returns the smallest element of the lattice.
+    fn min(&self) -> Self::Elem;
+}
+
+/// A lattice that is distributive. No new methods are added.
+pub trait DistributiveLattice: Lattice {}

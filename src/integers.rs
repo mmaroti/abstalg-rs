@@ -1,12 +1,12 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{Domain, EuclideanDomain, UnitaryRing};
+use crate::{Domain, EuclideanDomain, Lattice, DistributiveLattice, UnitaryRing};
 use num::{BigInt, Integer, One, Signed, Zero};
 
 /// The set of integers whose elements are
 /// [BigInt](../num/struct.BigInt.html) objects. The ring operations are the
-/// normal ones.
+/// normal ones. The lattice order is the normal total order.
 #[derive(Clone, Debug, Default)]
 pub struct Integers();
 
@@ -87,14 +87,30 @@ impl EuclideanDomain for Integers {
         }
     }
 
-    fn normalizer(&self, elem: &Self::Elem) -> Self::Elem {
-        if elem.is_negative() {
-            (-1).into()
+    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
+        if *elem < 0.into() {
+            (self.neg(elem), (-1).into())
         } else {
-            1.into()
+            (elem.clone(), 1.into())
         }
     }
 }
+
+impl Lattice for Integers {
+    fn meet(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        elem1.min(elem2).clone()
+    }
+
+    fn join(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        elem1.max(elem2).clone()
+    }
+
+    fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        elem1 <= elem2
+    }
+}
+
+impl DistributiveLattice for Integers {}
 
 #[cfg(test)]
 mod tests {

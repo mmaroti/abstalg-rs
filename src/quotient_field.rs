@@ -73,6 +73,14 @@ impl<R: EuclideanDomain> EuclideanDomain for QuotientField<R> {
             (self.div(elem1, elem2), self.zero())
         }
     }
+
+    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
+        if self.is_zero(elem) {
+            (self.zero(), self.one())
+        } else {
+            (self.one(), self.div(&self.one(), elem))
+        }
+    }
 }
 
 impl<R: EuclideanDomain> Field for QuotientField<R> {

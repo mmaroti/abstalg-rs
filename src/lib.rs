@@ -2,7 +2,9 @@
 // Licensed under the MIT license (see LICENSE)
 
 mod traits;
-pub use traits::{Domain, EuclideanDomain, Field, UnitaryRing};
+pub use traits::{
+    BoundedLattice, DistributiveLattice, Domain, EuclideanDomain, Field, Lattice, UnitaryRing,
+};
 
 mod integers;
 pub use integers::Integers;
@@ -21,3 +23,6 @@ pub use quotient_ring::QuotientRing;
 
 mod quotient_field;
 pub use quotient_field::QuotientField;
+
+mod divisibility_lattice;
+pub use divisibility_lattice::DivisibilityLattice;

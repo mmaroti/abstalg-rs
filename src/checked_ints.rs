@@ -1,16 +1,17 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{Domain, EuclideanDomain, UnitaryRing};
+use crate::{DistributiveLattice, Domain, EuclideanDomain, Lattice, UnitaryRing};
 use num::{PrimInt, Signed};
 use std::convert::From;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
 /// The set of integers whose elements are stored in a primitive signed
-/// integer types. The ring operations on these sets are checked, that is,
-/// they will panic if the mathematical result cannot be represented in
-/// the primitive type.
+/// integer types. This structure is functionally equivalent to the set
+/// of all integers, but some operations are going to panic if the
+/// mathematical result cannot be represented in the primitive type.
+/// The lattice order is the normal total order, which is not bounded.
 #[derive(Default)]
 pub struct CheckedInts<E>
 where
@@ -118,7 +119,34 @@ where
             (elem2 + 1.into()) / 2.into() <= *elem1 && *elem1 <= -(elem2 / 2.into())
         }
     }
+
+    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
+        if *elem < 0.into() {
+            (self.neg(elem), (-1).into())
+        } else {
+            (elem.clone(), 1.into())
+        }
+    }
 }
+
+impl<E> Lattice for CheckedInts<E>
+where
+    E: PrimInt + Signed + Debug + From<i8>,
+{
+    fn meet(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        *elem1.min(elem2)
+    }
+
+    fn join(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        *elem1.max(elem2)
+    }
+
+    fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        *elem1 <= *elem2
+    }
+}
+
+impl<E> DistributiveLattice for CheckedInts<E> where E: PrimInt + Signed + Debug + From<i8> {}
 
 #[cfg(test)]
 mod tests {
