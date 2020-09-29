@@ -1,7 +1,10 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{DistributiveLattice, Domain, EuclideanDomain, IntegralDomain, Lattice, UnitaryRing};
+use crate::{
+    DistributiveLattice, Domain, EuclideanDomain, IntegralDomain, Lattice, PartialOrder,
+    UnitaryRing,
+};
 use num::{BigInt, Integer, One, Signed, Zero};
 
 /// The set of integers whose elements are
@@ -39,7 +42,27 @@ impl UnitaryRing for Integers {
     }
 }
 
-impl IntegralDomain for Integers {}
+impl IntegralDomain for Integers {
+    fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
+        self.auto_try_div(elem1, elem2)
+    }
+
+    fn is_multiple_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        if elem2.is_zero() {
+            elem1.is_zero()
+        } else {
+            elem1.is_multiple_of(elem2)
+        }
+    }
+
+    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
+        if *elem < 0.into() {
+            (self.neg(elem), (-1).into())
+        } else {
+            (elem.clone(), 1.into())
+        }
+    }
+}
 
 impl EuclideanDomain for Integers {
     fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
@@ -74,14 +97,6 @@ impl EuclideanDomain for Integers {
         }
     }
 
-    fn is_multiple_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        if elem2.is_zero() {
-            elem1.is_zero()
-        } else {
-            elem1.is_multiple_of(elem2)
-        }
-    }
-
     fn is_reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         if elem2.is_zero() {
             true
@@ -91,13 +106,11 @@ impl EuclideanDomain for Integers {
             -&elem2 < elem1 && elem1 <= elem2
         }
     }
+}
 
-    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        if *elem < 0.into() {
-            (self.neg(elem), (-1).into())
-        } else {
-            (elem.clone(), 1.into())
-        }
+impl PartialOrder for Integers {
+    fn less_or_equal(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        elem1 <= elem2
     }
 }
 
@@ -108,10 +121,6 @@ impl Lattice for Integers {
 
     fn join(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         elem1.max(elem2).clone()
-    }
-
-    fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        elem1 <= elem2
     }
 }
 

@@ -143,7 +143,18 @@ where
     }
 }
 
-impl<R> IntegralDomain for Polynomials<R> where R: IntegralDomain {}
+impl<R> IntegralDomain for Polynomials<R>
+where
+    R: IntegralDomain,
+{
+    fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
+        None
+    }
+
+    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
+        (self.zero(), self.zero())
+    }
+}
 
 impl<F> EuclideanDomain for Polynomials<F>
 where
@@ -180,16 +191,6 @@ where
                 rem.pop();
             }
             (quo, rem)
-        }
-    }
-
-    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        if elem.is_empty() || self.base.is_one(&elem[elem.len() - 1]) {
-            (elem.clone(), self.one())
-        } else {
-            let a = self.base.inv(&elem[elem.len() - 1]);
-            let r = elem.iter().map(|b| self.base.mul(&a, b)).collect();
-            return (r, vec![a]);
         }
     }
 }

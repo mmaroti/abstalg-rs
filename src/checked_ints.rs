@@ -1,7 +1,10 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{DistributiveLattice, Domain, EuclideanDomain, IntegralDomain, Lattice, UnitaryRing};
+use crate::{
+    DistributiveLattice, Domain, EuclideanDomain, IntegralDomain, Lattice, PartialOrder,
+    UnitaryRing,
+};
 use num::{PrimInt, Signed};
 use std::convert::From;
 use std::fmt::Debug;
@@ -88,7 +91,22 @@ where
     }
 }
 
-impl<E> IntegralDomain for CheckedInts<E> where E: PrimInt + Signed + Debug + From<i8> {}
+impl<E> IntegralDomain for CheckedInts<E>
+where
+    E: PrimInt + Signed + Debug + From<i8>,
+{
+    fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
+        self.auto_try_div(elem1, elem2)
+    }
+
+    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
+        if *elem < 0.into() {
+            (self.neg(elem), (-1).into())
+        } else {
+            (elem.clone(), 1.into())
+        }
+    }
+}
 
 impl<E> EuclideanDomain for CheckedInts<E>
 where
@@ -127,16 +145,6 @@ where
         }
     }
 
-    fn is_multiple_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        if *elem2 == 0.into() {
-            *elem1 == 0.into()
-        } else if *elem2 == (-1).into() {
-            true
-        } else {
-            (*elem1 % *elem2) == 0.into()
-        }
-    }
-
     fn is_reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         if *elem2 == 0.into() {
             true
@@ -145,13 +153,14 @@ where
             (elem2 + 1.into()) / 2.into() <= *elem1 && *elem1 <= -(elem2 / 2.into())
         }
     }
+}
 
-    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        if *elem < 0.into() {
-            (self.neg(elem), (-1).into())
-        } else {
-            (*elem, 1.into())
-        }
+impl<E> PartialOrder for CheckedInts<E>
+where
+    E: PrimInt + Signed + Debug + From<i8>,
+{
+    fn less_or_equal(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        *elem1 <= *elem2
     }
 }
 
@@ -165,10 +174,6 @@ where
 
     fn join(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         *elem1.max(elem2)
-    }
-
-    fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        *elem1 <= *elem2
     }
 }
 

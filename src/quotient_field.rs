@@ -89,28 +89,25 @@ impl<R: EuclideanDomain> UnitaryRing for QuotientField<R> {
     }
 }
 
-impl<R: EuclideanDomain> IntegralDomain for QuotientField<R> {}
-
-impl<R: EuclideanDomain> EuclideanDomain for QuotientField<R> {
-    fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        if self.is_zero(elem2) {
-            (self.zero(), elem1.clone())
-        } else {
-            (self.div(elem1, elem2), self.zero())
-        }
+impl<R: EuclideanDomain> IntegralDomain for QuotientField<R> {
+    fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
+        self.auto_try_div(elem1, elem2)
     }
 
     fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        if self.is_zero(elem) {
-            (self.zero(), self.one())
-        } else {
-            (self.one(), self.div(&self.one(), elem))
-        }
+        self.auto_associate_repr(elem)
+    }
+}
+
+impl<R: EuclideanDomain> EuclideanDomain for QuotientField<R> {
+    fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
+        self.auto_quo_rem(elem1, elem2)
     }
 }
 
 impl<R: EuclideanDomain> Field for QuotientField<R> {
     fn inv(&self, elem: &Self::Elem) -> Self::Elem {
+        assert!(!self.is_zero(elem));
         let (g, _, mut r) = self.base.extended_gcd(&self.modulo, elem);
         if !self.base.is_one(&g) {
             let (a, b) = self.base.quo_rem(&self.base.one(), &g);

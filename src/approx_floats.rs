@@ -2,7 +2,8 @@
 // Licensed under the MIT license (see LICENSE)
 
 use crate::{
-    DistributiveLattice, Domain, EuclideanDomain, Field, IntegralDomain, Lattice, UnitaryRing,
+    DistributiveLattice, Domain, EuclideanDomain, Field, IntegralDomain, Lattice, PartialOrder,
+    UnitaryRing,
 };
 use num::{Float, One, Zero};
 use std::fmt::Debug;
@@ -59,26 +60,25 @@ where
     }
 }
 
-impl<E> IntegralDomain for ApproxFloats<E> where E: Float + Debug + Zero + One {}
+impl<E> IntegralDomain for ApproxFloats<E>
+where
+    E: Float + Debug + Zero + One,
+{
+    fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
+        self.auto_try_div(elem1, elem2)
+    }
+
+    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
+        self.auto_associate_repr(elem)
+    }
+}
 
 impl<E> EuclideanDomain for ApproxFloats<E>
 where
     E: Float + Debug + Zero + One,
 {
     fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        if self.is_zero(elem2) {
-            (self.zero(), *elem1)
-        } else {
-            (self.div(elem1, elem2), self.zero())
-        }
-    }
-
-    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        if self.is_zero(elem) {
-            (self.zero(), self.one())
-        } else {
-            (self.one(), self.div(&self.one(), elem))
-        }
+        self.auto_quo_rem(elem1, elem2)
     }
 }
 
@@ -91,9 +91,19 @@ where
     }
 
     fn div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        assert!(!self.is_zero(elem2));
         let r = *elem1 / *elem2;
         assert!(r.is_finite());
         r
+    }
+}
+
+impl<E> PartialOrder for ApproxFloats<E>
+where
+    E: Float + Debug + Zero + One,
+{
+    fn less_or_equal(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        *elem1 <= *elem2
     }
 }
 
@@ -107,10 +117,6 @@ where
 
     fn join(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         elem1.max(*elem2)
-    }
-
-    fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        *elem1 <= *elem2
     }
 }
 

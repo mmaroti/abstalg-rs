@@ -1,7 +1,7 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{BoundedLattice, DistributiveLattice, Domain, EuclideanDomain, Lattice};
+use crate::{BoundedOrder, DistributiveLattice, Domain, EuclideanDomain, Lattice, PartialOrder};
 
 /// The lattice of divisibility of an Euclidean domain where the elements are
 /// the unique representatives of associate classes, the meet is the greatest
@@ -33,6 +33,12 @@ impl<R: EuclideanDomain> Domain for DivisibilityLattice<R> {
     }
 }
 
+impl<R: EuclideanDomain> PartialOrder for DivisibilityLattice<R> {
+    fn less_or_equal(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.base.is_multiple_of(elem2, elem1)
+    }
+}
+
 impl<R: EuclideanDomain> Lattice for DivisibilityLattice<R> {
     fn meet(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         let elem = self.base.gcd(elem1, elem2);
@@ -43,15 +49,11 @@ impl<R: EuclideanDomain> Lattice for DivisibilityLattice<R> {
         let elem = self.base.lcm(elem1, elem2);
         self.base.associate_repr(&elem).0
     }
-
-    fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.base.is_multiple_of(elem2, elem1)
-    }
 }
 
 impl<R: EuclideanDomain> DistributiveLattice for DivisibilityLattice<R> {}
 
-impl<R: EuclideanDomain> BoundedLattice for DivisibilityLattice<R> {
+impl<R: EuclideanDomain> BoundedOrder for DivisibilityLattice<R> {
     fn max(&self) -> Self::Elem {
         self.base.zero()
     }
@@ -80,15 +82,15 @@ mod tests {
             for b in 0..50 {
                 let c = lat.meet(&a, &b);
                 assert!(lat.contains(&c));
-                assert!(lat.leq(&c, &a));
-                assert!(lat.leq(&c, &b));
+                assert!(lat.less_or_equal(&c, &a));
+                assert!(lat.less_or_equal(&c, &b));
 
                 let d = lat.join(&a, &b);
                 assert!(lat.contains(&d));
-                assert!(lat.leq(&a, &d));
-                assert!(lat.leq(&a, &d));
+                assert!(lat.less_or_equal(&a, &d));
+                assert!(lat.less_or_equal(&a, &d));
 
-                if lat.leq(&a, &b) {
+                if lat.less_or_equal(&a, &b) {
                     assert!(c == a);
                     assert!(d == b);
                 }

@@ -57,11 +57,42 @@ pub trait UnitaryRing: Domain {
 }
 
 /// An integral domain is a commutative unitary ring in which the product of
-/// non-zero elements are non-zero. This trait not add any new operations, just
-/// marks the properties of the ring. A typical examples are the integers, and
-/// the ring of polynomials with integer coefficients, which is not an
-/// Euclidean domain.
-pub trait IntegralDomain: UnitaryRing {}
+/// non-zero elements are non-zero. This trait not add any new operations,
+/// just marks the properties of the ring. A typical examples are the
+/// integers, and the ring of polynomials with integer coefficients, which is
+/// not an Euclidean domain.
+pub trait IntegralDomain: UnitaryRing {
+    /// Checks if the second element divides the first one and returns the
+    /// quotient if it exists. If both elements are zero, then zero is returned.
+    fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem>;
+
+    /// Returns true if the first element is a multiple of the secone one.
+    fn is_multiple_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.try_div(elem1, elem2).is_some()
+    }
+
+    /// Returns true if the first element is a divisor of the secone one.
+    fn is_divisor_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.is_multiple_of(elem2, elem1)
+    }
+
+    /// Returns true if the given element has a multiplicative inverse,
+    /// that is, it is a divisor of the identity element.
+    fn is_unit(&self, elem: &Self::Elem) -> bool {
+        self.is_multiple_of(elem, &self.one())
+    }
+
+    /// Returns true if the two elements are associated (divide each other)
+    fn are_associates(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.is_multiple_of(elem1, elem2) && self.is_multiple_of(elem2, elem1)
+    }
+
+    /// We assume, that among all associates of the given elem there is a
+    /// well defined unique one (non-negative for integers, zero or monoic
+    /// for polynomials). This method returns that representative and the unit
+    /// element whose product with the given element is the representative.
+    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem);
+}
 
 /// An Euclidean domain is an integral domain where the Euclidean algorithm
 /// can be implemented. Typical examples are the rings of integers and
@@ -87,34 +118,11 @@ pub trait EuclideanDomain: IntegralDomain {
         self.quo_rem(elem1, elem2).1
     }
 
-    /// Returns true if the first element is a multiple of the second one,
-    /// that is the remainder is zero.
-    fn is_multiple_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.is_zero(&self.rem(elem1, elem2))
-    }
-
     /// Returns true if the quotient is zero, that is the first element
     /// equals is own remainder when divided by the second one.
     fn is_reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         self.is_zero(&self.quo(elem1, elem2))
     }
-
-    /// Returns true if the two elements are associated (divide each other)
-    fn are_associates(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.is_multiple_of(elem1, elem2) && self.is_multiple_of(elem2, elem1)
-    }
-
-    /// Returns true if the given element has a multiplicative inverse,
-    /// that is, it is a divisor of the identity element.
-    fn is_unit(&self, elem: &Self::Elem) -> bool {
-        self.is_multiple_of(elem, &self.one())
-    }
-
-    /// We assume, that among all the associates of the given elem there must
-    /// be a well defined unique one (non-negative for integers, zero or monoic
-    /// for polynomials). This method returns that representative and the unit
-    /// element whose product with the given element is the representative.
-    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem);
 
     /// Calculates the greatest common divisor of two elements using the
     /// Euclidean algorithm.
@@ -159,6 +167,16 @@ pub trait EuclideanDomain: IntegralDomain {
         let gcd = self.gcd(elem1, elem2);
         self.is_unit(&gcd)
     }
+
+    #[doc(hidden)]
+    fn auto_try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
+        let (quo, rem) = self.quo_rem(elem1, elem2);
+        if self.is_zero(&rem) {
+            Some(quo)
+        } else {
+            None
+        }
+    }
 }
 
 /// A field is a commutative ring with identity where each non-zero element
@@ -176,12 +194,51 @@ pub trait Field: EuclideanDomain {
     fn div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.mul(elem1, &self.inv(elem2))
     }
+
+    #[doc(hidden)]
+    fn auto_quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
+        if self.is_zero(elem2) {
+            (self.zero(), elem1.clone())
+        } else {
+            (self.div(elem1, elem2), self.zero())
+        }
+    }
+
+    #[doc(hidden)]
+    fn auto_associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
+        if self.is_zero(elem) {
+            (self.zero(), self.one())
+        } else {
+            (self.one(), self.div(&self.one(), elem))
+        }
+    }
+}
+
+/// A set with a reflexive, transitive and antisymmetric relation.
+/// Typical examples are the lattices and the divisibility relation of
+/// integral domains (which might not be a lattice).
+pub trait PartialOrder: Domain {
+    /// Returns true if the first element is less than or equal to the
+    /// second one in the lattice order.
+    fn less_or_equal(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool;
+
+    /// Returns true if the first element is strictly less than the
+    /// second one.
+    fn less_than(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        elem1 != elem2 && self.less_or_equal(elem1, elem2)
+    }
+
+    /// Returns true if one of the elements is less than or equal to
+    /// the other.
+    fn comparable(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.less_or_equal(elem1, elem2) || self.less_or_equal(elem2, elem1)
+    }
 }
 
 /// A set where the join and meet of elements can be calculated. Typical
 /// examples are the total orders of integers or the divisibility relation
 /// on the associate classes of an Euclidean domain.
-pub trait Lattice: Domain {
+pub trait Lattice: PartialOrder {
     /// Returns the largest element that is less than or equal to both given
     /// elements.
     fn meet(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
@@ -189,16 +246,11 @@ pub trait Lattice: Domain {
     /// Returns the smallest element that is greater than or equal to both
     /// given elements.
     fn join(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
-
-    /// Returns true if the first element is less than or equal to the
-    /// second one in the lattice order.
-    fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        &self.meet(elem1, elem2) == elem1
-    }
 }
 
-/// A lattice that has a largest and smallest element.
-pub trait BoundedLattice: Lattice {
+/// A partial order that has a largest and smallest element. Typical
+/// examples are bounded lattices.
+pub trait BoundedOrder: PartialOrder {
     /// Returns the largest element of the lattice.
     fn max(&self) -> Self::Elem;
 
