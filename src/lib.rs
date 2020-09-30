@@ -22,8 +22,8 @@ pub use quotient_ring::*;
 mod quotient_field;
 pub use quotient_field::*;
 
-mod divisibility_lattice;
-pub use divisibility_lattice::*;
+mod divisibility_order;
+pub use divisibility_order::*;
 
 mod polynomials;
 pub use polynomials::*;

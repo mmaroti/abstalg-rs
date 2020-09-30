@@ -7,14 +7,14 @@ use crate::{
 };
 use num::{BigInt, Integer, One, Signed, Zero};
 
+/// The Euclidean ring of integers with arbitrary large values.
+pub const Z: Integers = Integers();
+
 /// The set of integers whose elements are
 /// [BigInt](../num/struct.BigInt.html) objects. The ring operations are the
 /// normal ones. The lattice order is the normal total order.
 #[derive(Clone, Debug, Default)]
 pub struct Integers();
-
-/// The Euclidean ring of integers with arbitrary large values.
-pub const INT: Integers = Integers();
 
 impl Domain for Integers {
     type Elem = BigInt;

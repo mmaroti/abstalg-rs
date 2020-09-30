@@ -10,6 +10,30 @@ use std::convert::From;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+/// The Euclidean ring of integers with `i8` primitive values and checked
+/// operations.
+pub const I8: CheckedInts<i8> = CheckedInts {
+    phantom: PhantomData,
+};
+
+/// The Euclidean ring of integers with `i16` primitive values and checked
+/// operations.
+pub const I16: CheckedInts<i16> = CheckedInts {
+    phantom: PhantomData,
+};
+
+/// The Euclidean ring of integers with `i32` primitive values and checked
+/// operations.
+pub const I32: CheckedInts<i32> = CheckedInts {
+    phantom: PhantomData,
+};
+
+/// The Euclidean ring of integers with `i64` primitive values and checked
+/// operations.
+pub const I64: CheckedInts<i64> = CheckedInts {
+    phantom: PhantomData,
+};
+
 /// The set of integers whose elements are stored in a primitive signed
 /// integer type. This structure is functionally equivalent to the set
 /// of all integers, but some operations are going to panic if the
@@ -22,30 +46,6 @@ where
 {
     phantom: PhantomData<E>,
 }
-
-/// The Euclidean ring of integers with `i8` primitive values and checked
-/// operations.
-pub const INT8: CheckedInts<i8> = CheckedInts {
-    phantom: PhantomData,
-};
-
-/// The Euclidean ring of integers with `i16` primitive values and checked
-/// operations.
-pub const INT16: CheckedInts<i16> = CheckedInts {
-    phantom: PhantomData,
-};
-
-/// The Euclidean ring of integers with `i32` primitive values and checked
-/// operations.
-pub const INT32: CheckedInts<i32> = CheckedInts {
-    phantom: PhantomData,
-};
-
-/// The Euclidean ring of integers with `i64` primitive values and checked
-/// operations.
-pub const INT64: CheckedInts<i64> = CheckedInts {
-    phantom: PhantomData,
-};
 
 impl<E> Domain for CheckedInts<E>
 where

@@ -3,6 +3,17 @@
 
 use crate::{Domain, EuclideanDomain, Field, IntegralDomain, UnitaryRing};
 
+/// The Euclidean ring of polynomials over the 2-element field.
+pub const F2X: Polynomials<crate::QuotientField<crate::CheckedInts<i8>>> =
+    Polynomials { base: crate::F2 };
+
+/// The Euclidean ring of polynomials over the 3-element field.
+pub const F3X: Polynomials<crate::QuotientField<crate::CheckedInts<i8>>> =
+    Polynomials { base: crate::F3 };
+
+/// The integral domain of polynomials over the ring of integers.
+pub const ZX: Polynomials<crate::Integers> = Polynomials { base: crate::Z };
+
 /// The ring of polynomials over a base ring or field where each element
 /// is represented as a vector whose last element, the leading coefficient (if
 /// any) must be non-zero. This means that the empty vector is the zero
@@ -13,17 +24,6 @@ where
 {
     base: R,
 }
-
-/// The Euclidean ring of polynomials over the 2-element field.
-pub const POLY_GF_2: Polynomials<crate::QuotientField<crate::CheckedInts<i8>>> =
-    Polynomials { base: crate::GF_2 };
-
-/// The Euclidean ring of polynomials over the 3-element field.
-pub const POLY_GF_3: Polynomials<crate::QuotientField<crate::CheckedInts<i8>>> =
-    Polynomials { base: crate::GF_3 };
-
-/// The integral ring of polynomials over the ring of integers.
-pub const POLY_INT: Polynomials<crate::Integers> = Polynomials { base: crate::INT };
 
 impl<R: UnitaryRing> Polynomials<R> {
     /// Creates a new ring of polynomials over the given ring. The ring cannot

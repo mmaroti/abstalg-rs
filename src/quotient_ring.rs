@@ -3,12 +3,32 @@
 
 use crate::{Domain, EuclideanDomain, UnitaryRing};
 
+/// The 2-element unitary ring represented as residue classes of integers
+/// modulo 2.
+pub const Z2: QuotientRing<crate::CheckedInts<i8>> = QuotientRing {
+    base: crate::I8,
+    modulo: 2,
+};
+
+/// The 3-element unitary ring represented as residue classes of integers
+/// modulo 3.
+pub const Z3: QuotientRing<crate::CheckedInts<i8>> = QuotientRing {
+    base: crate::I8,
+    modulo: 3,
+};
+
+/// The 4-element unitary ring represented as residue classes of integers
+/// modulo 2.
+pub const Z4: QuotientRing<crate::CheckedInts<i8>> = QuotientRing {
+    base: crate::I8,
+    modulo: 4,
+};
+
 /// A quotient ring of an Euclidean domain by a principal ideal.
 #[derive(Clone, Debug, Default)]
 pub struct QuotientRing<R: EuclideanDomain> {
     base: R,
     modulo: R::Elem,
-    one: R::Elem,
 }
 
 impl<R: EuclideanDomain> QuotientRing<R> {
@@ -18,7 +38,8 @@ impl<R: EuclideanDomain> QuotientRing<R> {
         assert!(base.contains(&modulo));
         // if the quotient is trivial, then the identity element becomes zero.
         let one = base.quo(&base.one(), &modulo);
-        QuotientRing { base, modulo, one }
+        assert!(one == base.one());
+        QuotientRing { base, modulo }
     }
 
     /// Returns the base ring from which this ring was constructed.
@@ -54,7 +75,7 @@ impl<R: EuclideanDomain> UnitaryRing for QuotientRing<R> {
     }
 
     fn one(&self) -> Self::Elem {
-        self.one.clone()
+        self.base.one()
     }
 
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
