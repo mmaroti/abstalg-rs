@@ -18,6 +18,10 @@ pub struct Integers();
 
 impl Domain for Integers {
     type Elem = BigInt;
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        elem1 == elem2
+    }
 }
 
 impl UnitaryRing for Integers {

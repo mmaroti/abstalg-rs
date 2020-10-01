@@ -24,6 +24,10 @@ where
     E: PrimInt + Signed + WrappingAdd + WrappingMul + WrappingSub + Debug + From<i8>,
 {
     type Elem = E;
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        elem1 == elem2
+    }
 }
 
 impl<E> UnitaryRing for ModularInts<E>

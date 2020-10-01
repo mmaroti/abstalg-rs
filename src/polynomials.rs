@@ -77,6 +77,17 @@ where
         }
         !self.base.is_zero(last)
     }
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        if elem1.len() != elem2.len() {
+            false
+        } else {
+            elem1
+                .iter()
+                .zip(elem2.iter())
+                .all(|(x, y)| self.base.equals(x, y))
+        }
+    }
 }
 
 impl<R> UnitaryRing for Polynomials<R>

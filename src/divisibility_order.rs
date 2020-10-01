@@ -43,6 +43,10 @@ impl<R: IntegralDomain> Domain for DivisibilityOrder<R> {
         let m = self.base.associate_repr(elem).1;
         self.base.is_one(&m)
     }
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.base.equals(elem1, elem2)
+    }
 }
 
 impl<R: IntegralDomain> PartialOrder for DivisibilityOrder<R> {

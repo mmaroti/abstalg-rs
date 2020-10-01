@@ -6,18 +6,20 @@
 
 use std::fmt::Debug;
 
-/// An arbitrary set of elements where not all representable elements are
-/// members of the set, but every member is uniquely represented, thus they
-/// can be compered using the `==` operator.
+/// An arbitrary set of elements where not all representable objects are
+/// members of the set. The same element can be represented by different
+/// objects, thus the `equals` method shall be used in place of `==`.
 pub trait Domain {
     /// The type of the elements of this domain.
-    type Elem: Clone + PartialEq + Debug;
+    type Elem: Clone + Debug;
 
-    /// Checks if the given element is a member of the domain. Not all
-    /// possible objects need to be elements of the set.
+    /// Checks if the given object is a member of the domain.
     fn contains(&self, _elem: &Self::Elem) -> bool {
         true
     }
+
+    /// Checks if the given objects represent the same element of the set.
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool;
 }
 
 /// A ring with an identity element (not necessarily commutative). Typical
@@ -30,7 +32,7 @@ pub trait UnitaryRing: Domain {
 
     /// Checks if the given element is the additive identity of the ring.
     fn is_zero(&self, elem: &Self::Elem) -> bool {
-        elem == &self.zero()
+        self.equals(elem, &self.zero())
     }
 
     /// The additive inverse of the given element.
@@ -49,7 +51,7 @@ pub trait UnitaryRing: Domain {
 
     /// Checks if the given element is the multiplicative identity of the ring.
     fn is_one(&self, elem: &Self::Elem) -> bool {
-        elem == &self.one()
+        self.equals(elem, &self.one())
     }
 
     /// The multiplicative product of the given elements.
@@ -226,7 +228,7 @@ pub trait PartialOrder: Domain {
     /// Returns true if the first element is strictly less than the
     /// second one.
     fn less_than(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        elem1 != elem2 && self.less_or_equal(elem1, elem2)
+        !self.equals(elem1, elem2) && self.less_or_equal(elem1, elem2)
     }
 
     /// Returns true if one of the elements is less than or equal to

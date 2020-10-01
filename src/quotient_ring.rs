@@ -36,9 +36,6 @@ impl<R: EuclideanDomain> QuotientRing<R> {
     /// one of its element.
     pub fn new(base: R, modulo: R::Elem) -> Self {
         assert!(base.contains(&modulo));
-        // if the quotient is trivial, then the identity element becomes zero.
-        let one = base.quo(&base.one(), &modulo);
-        assert!(one == base.one());
         QuotientRing { base, modulo }
     }
 
@@ -58,6 +55,10 @@ impl<R: EuclideanDomain> Domain for QuotientRing<R> {
 
     fn contains(&self, elem: &Self::Elem) -> bool {
         self.base.is_reduced(elem, &self.modulo)
+    }
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.base.equals(elem1, elem2)
     }
 }
 

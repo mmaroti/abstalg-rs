@@ -27,6 +27,10 @@ where
     fn contains(&self, elem: &Self::Elem) -> bool {
         elem.is_finite()
     }
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        elem1 == elem2
+    }
 }
 
 impl<E> UnitaryRing for ApproxFloats<E>

@@ -53,6 +53,10 @@ impl<R: EuclideanDomain> Domain for QuotientField<R> {
     fn contains(&self, elem: &Self::Elem) -> bool {
         self.base.is_reduced(elem, &self.modulo)
     }
+
+    fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.base.equals(elem1, elem2)
+    }
 }
 
 impl<R: EuclideanDomain> UnitaryRing for QuotientField<R> {
