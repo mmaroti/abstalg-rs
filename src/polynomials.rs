@@ -40,6 +40,7 @@ impl<R: UnitaryRing> Polynomials<R> {
 
     /// Returns the degree of the given polynomial. The zero polynomial has
     /// no degree.
+    #[allow(clippy::ptr_arg)]
     pub fn degree(&self, elem: &Vec<R::Elem>) -> Option<usize> {
         if elem.is_empty() {
             None
@@ -50,6 +51,7 @@ impl<R: UnitaryRing> Polynomials<R> {
 
     /// Returns the leading coefficient of the given polynomial. The zero
     /// polynomial has no leading coefficient.
+    #[allow(clippy::ptr_arg)]
     pub fn leading_coef(&self, elem: &Vec<R::Elem>) -> Option<R::Elem> {
         if elem.is_empty() {
             None
@@ -102,7 +104,7 @@ where
             };
             let mut elem3 = elem1.clone();
             for i in 0..elem2.len() {
-                elem3[i] = self.base.add(&elem1[i], &elem2[i]);
+                elem3[i] = self.base.add(&elem3[i], &elem2[i]);
             }
             elem3
         } else {
@@ -148,11 +150,48 @@ where
     R: IntegralDomain,
 {
     fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
-        None
+        if elem2.is_empty() || elem1.len() < elem2.len() {
+            if elem1.is_empty() {
+                Some(self.zero())
+            } else {
+                None
+            }
+        } else {
+            let mut quo = Vec::with_capacity(elem1.len() + elem2.len() - 1);
+            quo.resize(elem1.len() - elem2.len() + 1, self.base.zero());
+            let mut rem = elem1.clone();
+
+            let a = &elem2[elem2.len() - 1];
+            assert!(!self.base.is_zero(a));
+
+            for i in (0..quo.len()).rev() {
+                quo[i] = self.base.try_div(&rem[i + elem2.len() - 1], a)?;
+                let b = self.base.neg(&quo[i]);
+                for j in 0..(elem2.len() - 1) {
+                    let c = self.base.mul(&elem2[j], &b);
+                    rem[i + j] = self.base.add(&rem[i + j], &c);
+                }
+            }
+
+            for d in rem.iter().take(elem2.len() - 1) {
+                if !self.base.is_zero(d) {
+                    return None;
+                }
+            }
+            Some(quo)
+        }
     }
 
     fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        (self.zero(), self.zero())
+        if elem.is_empty() {
+            (self.zero(), self.one())
+        } else {
+            let last = elem.len() - 1;
+            let (repr, unit) = self.base.associate_repr(&elem[last]);
+            let mut elem: Self::Elem = elem.iter().map(|x| self.base.mul(x, &unit)).collect();
+            elem[last] = repr; // overwrite for approximate operations
+            (elem, vec![unit])
+        }
     }
 }
 
@@ -162,34 +201,30 @@ where
 {
     fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
         if elem2.is_empty() || elem1.len() < elem2.len() {
-            return (self.zero(), elem1.clone());
+            (self.zero(), elem1.clone())
         } else {
-            let a = self.base.neg(&elem2[elem2.len() - 1]);
-            assert!(!self.base.is_zero(&a));
-
-            let mut quo = Vec::with_capacity(elem1.len() - elem2.len() + 1);
+            let mut quo = Vec::with_capacity(elem1.len() + elem2.len() - 1);
             quo.resize(elem1.len() - elem2.len() + 1, self.base.zero());
             let mut rem = elem1.clone();
 
+            let a = &elem2[elem2.len() - 1];
+            assert!(!self.base.is_zero(a));
+
             for i in (0..quo.len()).rev() {
-                let b = self.base.div(&rem[i + elem2.len() - 1], &a);
-                quo[i] = self.base.neg(&b);
+                quo[i] = self.base.div(&rem[i + elem2.len() - 1], a);
+                let b = self.base.neg(&quo[i]);
                 for j in 0..(elem2.len() - 1) {
                     let c = self.base.mul(&elem2[j], &b);
                     rem[i + j] = self.base.add(&rem[i + j], &c);
                 }
-                rem[i + elem2.len() - 1] = self.base.zero();
             }
 
             let mut i = elem2.len() - 1;
             while i > 0 && self.base.is_zero(&rem[i - 1]) {
-                i = i - 1;
+                i -= 1;
             }
             rem.truncate(i);
 
-            while !rem.is_empty() && self.base.is_zero(&rem[rem.len() - 1]) {
-                rem.pop();
-            }
             (quo, rem)
         }
     }

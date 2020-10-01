@@ -91,6 +91,7 @@ pub trait IntegralDomain: UnitaryRing {
     /// well defined unique one (non-negative for integers, zero or monoic
     /// for polynomials). This method returns that representative and the unit
     /// element whose product with the given element is the representative.
+    /// If the element is zero, then zero and one is returned.
     fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem);
 }
 

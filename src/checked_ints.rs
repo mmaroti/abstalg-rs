@@ -103,7 +103,7 @@ where
         if *elem < 0.into() {
             (self.neg(elem), (-1).into())
         } else {
-            (elem.clone(), 1.into())
+            (*elem, 1.into())
         }
     }
 }
