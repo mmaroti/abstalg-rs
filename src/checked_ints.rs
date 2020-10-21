@@ -39,7 +39,7 @@ pub const I64: CheckedInts<i64> = CheckedInts {
 /// of all integers, but some operations are going to panic if the
 /// mathematical result cannot be represented in the primitive type.
 /// The lattice order is the normal total order, which is not bounded.
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub struct CheckedInts<E>
 where
     E: PrimInt + Signed + Debug + From<i8>,

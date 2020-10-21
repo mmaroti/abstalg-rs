@@ -84,8 +84,8 @@ pub trait IntegralDomain: UnitaryRing {
         self.is_multiple_of(elem, &self.one())
     }
 
-    /// Returns true if the two elements are associated (divide each other)
-    fn are_associates(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+    /// Returns true if the two elements are associates (divide each other)
+    fn associates(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         self.is_multiple_of(elem1, elem2) && self.is_multiple_of(elem2, elem1)
     }
 
@@ -142,9 +142,8 @@ pub trait EuclideanDomain: IntegralDomain {
 
     /// Calculates the lest common divisor of the two elements.
     fn lcm(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let a = self.gcd(elem1, elem2);
-        let a = self.quo(elem1, &a);
-        self.mul(&a, elem2)
+        let gcd = self.gcd(elem1, elem2);
+        self.mul(&self.quo(elem1, &gcd), elem2)
     }
 
     /// Performs the extended Euclidean algorithm which returns the greatest
@@ -166,7 +165,7 @@ pub trait EuclideanDomain: IntegralDomain {
     }
 
     /// Checks if the given two elements are relative prime.
-    fn are_relative_primes(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+    fn relative_primes(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         let gcd = self.gcd(elem1, elem2);
         self.is_unit(&gcd)
     }
@@ -199,6 +198,7 @@ pub trait Field: EuclideanDomain {
     }
 
     #[doc(hidden)]
+    /// Default implementation of the Euclidean domain `quo_rem` operation.
     fn auto_quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
         if self.is_zero(elem2) {
             (self.zero(), elem1.clone())
@@ -208,6 +208,7 @@ pub trait Field: EuclideanDomain {
     }
 
     #[doc(hidden)]
+    /// Default implementation of the integral domain `associate_repr` operation.
     fn auto_associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
         if self.is_zero(elem) {
             (self.zero(), self.one())

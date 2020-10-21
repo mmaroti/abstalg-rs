@@ -27,3 +27,6 @@ pub use divisibility_order::*;
 
 mod polynomials;
 pub use polynomials::*;
+
+mod reduced_fractions;
+pub use reduced_fractions::*;

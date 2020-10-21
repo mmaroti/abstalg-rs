@@ -12,6 +12,7 @@ use std::marker::PhantomData;
 /// primitive signed integer type. The ring operations on these sets wrap
 /// around. This structure is equivalent to the quotient ring of the set of
 /// integers modulo `2^n`, but its implementation is more efficient.
+#[derive(Clone, Debug, Default)]
 pub struct ModularInts<E>
 where
     E: PrimInt + Signed + WrappingAdd + WrappingMul + WrappingSub + Debug + From<i8>,

@@ -18,6 +18,7 @@ pub const ZX: Polynomials<crate::Integers> = Polynomials { base: crate::Z };
 /// is represented as a vector whose last element, the leading coefficient (if
 /// any) must be non-zero. This means that the empty vector is the zero
 /// element, and every polynomial has a unique representation.
+#[derive(Clone, Debug, Default)]
 pub struct Polynomials<R>
 where
     R: UnitaryRing,
@@ -244,12 +245,11 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CheckedInts, QuotientField};
+    use crate::{QuotientField, I32};
 
     #[test]
     fn field_256() {
-        let ring1: CheckedInts<i32> = Default::default();
-        let field1 = QuotientField::new(ring1, 2);
+        let field1 = QuotientField::new(I32, 2);
         let ring2 = Polynomials::new(field1);
 
         // the irreducible polynomial 1 + x + x^3 + x^4 + x^8
