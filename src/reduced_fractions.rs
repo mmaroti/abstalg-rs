@@ -95,6 +95,11 @@ where
         };
         self.reduce(&elem)
     }
+
+    fn multiple(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+        let elem = Self::Elem::new_raw(self.base.multiple(num, elem.numer()), elem.denom().clone());
+        self.reduce(&elem)
+    }
 }
 
 impl<R> UnitaryRing for ReducedFractions<R>

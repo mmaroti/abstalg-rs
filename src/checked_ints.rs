@@ -3,7 +3,7 @@
 
 use crate::*;
 use num::{PrimInt, Signed};
-use std::convert::From;
+use std::convert::{From, TryFrom, TryInto};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -39,14 +39,14 @@ pub const I64: CheckedInts<i64> = CheckedInts {
 #[derive(Clone, Debug, Default)]
 pub struct CheckedInts<E>
 where
-    E: PrimInt + Signed + Debug + From<i8>,
+    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
 {
     phantom: PhantomData<E>,
 }
 
 impl<E> Domain for CheckedInts<E>
 where
-    E: PrimInt + Signed + Debug + From<i8>,
+    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
 {
     type Elem = E;
 
@@ -57,14 +57,14 @@ where
 
 impl<E> AdditiveGroup for CheckedInts<E>
 where
-    E: PrimInt + Signed + Debug + From<i8>,
+    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
 {
     fn zero(&self) -> Self::Elem {
         0.into()
     }
 
     fn is_zero(&self, elem: &Self::Elem) -> bool {
-        *elem == 0.into()
+        elem.is_zero()
     }
 
     fn neg(&self, elem: &Self::Elem) -> Self::Elem {
@@ -78,11 +78,16 @@ where
     fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         elem1.checked_sub(elem2).unwrap()
     }
+
+    fn multiple(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+        let num: Option<Self::Elem> = num.try_into().ok();
+        elem.checked_mul(&num.expect("too large value")).unwrap()
+    }
 }
 
 impl<E> UnitaryRing for CheckedInts<E>
 where
-    E: PrimInt + Signed + Debug + From<i8>,
+    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
 {
     fn one(&self) -> Self::Elem {
         1.into()
@@ -99,7 +104,7 @@ where
 
 impl<E> IntegralDomain for CheckedInts<E>
 where
-    E: PrimInt + Signed + Debug + From<i8>,
+    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
 {
     fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
         self.auto_try_div(elem1, elem2)
@@ -116,7 +121,7 @@ where
 
 impl<E> EuclideanDomain for CheckedInts<E>
 where
-    E: PrimInt + Signed + Debug + From<i8>,
+    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
 {
     fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
         if *elem2 == 0.into() {
@@ -163,7 +168,7 @@ where
 
 impl<E> PartialOrder for CheckedInts<E>
 where
-    E: PrimInt + Signed + Debug + From<i8>,
+    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
 {
     fn less_or_equal(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         *elem1 <= *elem2
@@ -172,7 +177,7 @@ where
 
 impl<E> Lattice for CheckedInts<E>
 where
-    E: PrimInt + Signed + Debug + From<i8>,
+    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
 {
     fn meet(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         *elem1.min(elem2)
@@ -183,7 +188,10 @@ where
     }
 }
 
-impl<E> DistributiveLattice for CheckedInts<E> where E: PrimInt + Signed + Debug + From<i8> {}
+impl<E> DistributiveLattice for CheckedInts<E> where
+    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>
+{
+}
 
 #[cfg(test)]
 mod tests {

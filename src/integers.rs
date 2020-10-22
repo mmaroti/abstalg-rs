@@ -26,12 +26,24 @@ impl AdditiveGroup for Integers {
         Zero::zero()
     }
 
+    fn is_zero(&self, elem: &Self::Elem) -> bool {
+        elem.is_zero()
+    }
+
     fn neg(&self, elem: &Self::Elem) -> Self::Elem {
         -elem
     }
 
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         elem1 + elem2
+    }
+
+    fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        elem1 - elem2
+    }
+
+    fn multiple(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+        num * elem
     }
 }
 

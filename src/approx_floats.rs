@@ -6,6 +6,16 @@ use num::{Float, One, Zero};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+/// The field of reals approximated by machine `f32` values.
+pub const F32: ApproxFloats<f32> = ApproxFloats {
+    phantom: PhantomData,
+};
+
+/// The field of reals approximated by machine `f64` values.
+pub const F64: ApproxFloats<f64> = ApproxFloats {
+    phantom: PhantomData,
+};
+
 /// The field of real numbers approximated by a primitive floating point
 /// number. NaN and infinity values are not considered as members, so all
 /// operations resulting one of these will panic. The lattice order is the
@@ -17,7 +27,7 @@ pub struct ApproxFloats<E> {
 
 impl<E> Domain for ApproxFloats<E>
 where
-    E: Float + Debug + Zero + One,
+    E: Float + Debug + Zero + One + From<isize>,
 {
     type Elem = E;
 
@@ -32,7 +42,7 @@ where
 
 impl<E> AdditiveGroup for ApproxFloats<E>
 where
-    E: Float + Debug + Zero + One,
+    E: Float + Debug + Zero + One + From<isize>,
 {
     fn zero(&self) -> Self::Elem {
         Zero::zero()
@@ -49,11 +59,22 @@ where
         assert!(r.is_finite());
         r
     }
+
+    fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        let r = *elem1 - *elem2;
+        assert!(r.is_finite());
+        r
+    }
+
+    fn multiple(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+        let num: Self::Elem = num.into();
+        num * *elem
+    }
 }
 
 impl<E> UnitaryRing for ApproxFloats<E>
 where
-    E: Float + Debug + Zero + One,
+    E: Float + Debug + Zero + One + From<isize>,
 {
     fn one(&self) -> Self::Elem {
         One::one()
@@ -68,7 +89,7 @@ where
 
 impl<E> IntegralDomain for ApproxFloats<E>
 where
-    E: Float + Debug + Zero + One,
+    E: Float + Debug + Zero + One + From<isize>,
 {
     fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
         self.auto_try_div(elem1, elem2)
@@ -81,7 +102,7 @@ where
 
 impl<E> EuclideanDomain for ApproxFloats<E>
 where
-    E: Float + Debug + Zero + One,
+    E: Float + Debug + Zero + One + From<isize>,
 {
     fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
         self.auto_quo_rem(elem1, elem2)
@@ -90,7 +111,7 @@ where
 
 impl<E> Field for ApproxFloats<E>
 where
-    E: Float + Debug + Zero + One,
+    E: Float + Debug + Zero + One + From<isize>,
 {
     fn inv(&self, elem: &Self::Elem) -> Self::Elem {
         self.div(&self.one(), elem)
@@ -106,7 +127,7 @@ where
 
 impl<E> PartialOrder for ApproxFloats<E>
 where
-    E: Float + Debug + Zero + One,
+    E: Float + Debug + Zero + One + From<isize>,
 {
     fn less_or_equal(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         *elem1 <= *elem2
@@ -115,7 +136,7 @@ where
 
 impl<E> Lattice for ApproxFloats<E>
 where
-    E: Float + Debug + Zero + One,
+    E: Float + Debug + Zero + One + From<isize>,
 {
     fn meet(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         elem1.min(*elem2)
@@ -126,4 +147,4 @@ where
     }
 }
 
-impl<E> DistributiveLattice for ApproxFloats<E> where E: Float + Debug + Zero + One {}
+impl<E> DistributiveLattice for ApproxFloats<E> where E: Float + Debug + Zero + One + From<isize> {}

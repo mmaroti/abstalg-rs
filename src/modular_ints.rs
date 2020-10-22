@@ -4,7 +4,7 @@
 use crate::*;
 use num::traits::ops::wrapping::{WrappingAdd, WrappingMul, WrappingSub};
 use num::{PrimInt, Signed};
-use std::convert::From;
+use std::convert::{From, TryFrom};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -15,14 +15,28 @@ use std::marker::PhantomData;
 #[derive(Clone, Debug, Default)]
 pub struct ModularInts<E>
 where
-    E: PrimInt + Signed + WrappingAdd + WrappingMul + WrappingSub + Debug + From<i8>,
+    E: PrimInt
+        + Signed
+        + WrappingAdd
+        + WrappingMul
+        + WrappingSub
+        + Debug
+        + From<i8>
+        + TryFrom<isize>,
 {
     phantom: PhantomData<E>,
 }
 
 impl<E> Domain for ModularInts<E>
 where
-    E: PrimInt + Signed + WrappingAdd + WrappingMul + WrappingSub + Debug + From<i8>,
+    E: PrimInt
+        + Signed
+        + WrappingAdd
+        + WrappingMul
+        + WrappingSub
+        + Debug
+        + From<i8>
+        + TryFrom<isize>,
 {
     type Elem = E;
 
@@ -33,7 +47,14 @@ where
 
 impl<E> AdditiveGroup for ModularInts<E>
 where
-    E: PrimInt + Signed + WrappingAdd + WrappingMul + WrappingSub + Debug + From<i8>,
+    E: PrimInt
+        + Signed
+        + WrappingAdd
+        + WrappingMul
+        + WrappingSub
+        + Debug
+        + From<i8>
+        + TryFrom<isize>,
 {
     fn zero(&self) -> Self::Elem {
         0.into()
@@ -58,7 +79,14 @@ where
 
 impl<E> UnitaryRing for ModularInts<E>
 where
-    E: PrimInt + Signed + WrappingAdd + WrappingMul + WrappingSub + Debug + From<i8>,
+    E: PrimInt
+        + Signed
+        + WrappingAdd
+        + WrappingMul
+        + WrappingSub
+        + Debug
+        + From<i8>
+        + TryFrom<isize>,
 {
     fn one(&self) -> Self::Elem {
         1.into()

@@ -43,6 +43,26 @@ pub trait AdditiveGroup: Domain {
     fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.add(elem1, &self.neg(elem2))
     }
+
+    /// Returns the integer multiple of the given element.
+    fn multiple(&self, mut num: isize, elem: &Self::Elem) -> Self::Elem {
+        let mut elem = if num < 0 {
+            num = -num;
+            self.neg(elem)
+        } else {
+            elem.clone()
+        };
+
+        let mut res = self.zero();
+        while num > 0 {
+            if num % 1 != 0 {
+                res = self.add(&res, &elem);
+            }
+            num /= 2;
+            elem = self.add(&elem, &elem);
+        }
+        res
+    }
 }
 
 /// A ring with an identity element (not necessarily commutative). Typical

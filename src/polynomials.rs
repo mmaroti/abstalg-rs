@@ -120,6 +120,17 @@ where
             elem3
         }
     }
+
+    fn multiple(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+        let mut elem: Self::Elem = elem.iter().map(|a| self.base.multiple(num, a)).collect();
+        for i in (0..elem.len()).rev() {
+            if !self.base.is_zero(&elem[i]) {
+                elem.resize(i + 1, self.base.zero());
+                return elem;
+            }
+        }
+        self.zero()
+    }
 }
 
 impl<R> UnitaryRing for Polynomials<R>
