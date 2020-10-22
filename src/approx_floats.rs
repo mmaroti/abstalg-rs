@@ -1,10 +1,7 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{
-    DistributiveLattice, Domain, EuclideanDomain, Field, IntegralDomain, Lattice, PartialOrder,
-    UnitaryRing,
-};
+use crate::*;
 use num::{Float, One, Zero};
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -33,7 +30,7 @@ where
     }
 }
 
-impl<E> UnitaryRing for ApproxFloats<E>
+impl<E> AdditiveGroup for ApproxFloats<E>
 where
     E: Float + Debug + Zero + One,
 {
@@ -52,7 +49,12 @@ where
         assert!(r.is_finite());
         r
     }
+}
 
+impl<E> UnitaryRing for ApproxFloats<E>
+where
+    E: Float + Debug + Zero + One,
+{
     fn one(&self) -> Self::Elem {
         One::one()
     }

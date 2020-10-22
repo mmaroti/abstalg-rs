@@ -1,18 +1,7 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{
-    BoundedOrder, DistributiveLattice, Domain, EuclideanDomain, IntegralDomain, Lattice,
-    PartialOrder,
-};
-
-/// The bounded distributive lattice of divisibility on the set of non-negative
-/// integers.
-pub const ZD: DivisibilityOrder<crate::Integers> = DivisibilityOrder { base: crate::Z };
-
-/// The bounded partial order of divisibility on the set of polynomials over
-/// the integers.
-pub const ZXD: DivisibilityOrder<crate::Integers> = DivisibilityOrder { base: crate::Z };
+use crate::*;
 
 /// The divisibility partial order of an integral domain where the elements are
 /// the unique representatives of associate classes, the largest element is
@@ -82,12 +71,10 @@ impl<R: EuclideanDomain> DistributiveLattice for DivisibilityOrder<R> {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::CheckedInts;
 
     #[test]
     fn order() {
-        let ring: CheckedInts<i32> = Default::default();
-        let lat = DivisibilityOrder::new(ring);
+        let lat = DivisibilityOrder::new(I32);
 
         for a in -50..50 {
             if a < 0 {

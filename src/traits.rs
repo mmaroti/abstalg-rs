@@ -22,11 +22,9 @@ pub trait Domain {
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool;
 }
 
-/// A ring with an identity element (not necessarily commutative). Typical
-/// examples are the rings of rectangular matrices, integers and polynomials.
-/// Some operations may panic (for example, the underlying type cannot
-/// represent the real result).
-pub trait UnitaryRing: Domain {
+/// A commutative group written in additive notation. Typical examples
+/// are the additive structures of rings, fields and vector spaces.
+pub trait AdditiveGroup: Domain {
     /// The additive identity element of the ring.
     fn zero(&self) -> Self::Elem;
 
@@ -45,7 +43,11 @@ pub trait UnitaryRing: Domain {
     fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.add(elem1, &self.neg(elem2))
     }
+}
 
+/// A ring with an identity element (not necessarily commutative). Typical
+/// examples are the rings of rectangular matrices, integers and polynomials.
+pub trait UnitaryRing: AdditiveGroup {
     /// The multiplicative identity element of the ring.
     fn one(&self) -> Self::Elem;
 

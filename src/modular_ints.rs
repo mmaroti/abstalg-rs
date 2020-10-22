@@ -1,7 +1,7 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{Domain, UnitaryRing};
+use crate::*;
 use num::traits::ops::wrapping::{WrappingAdd, WrappingMul, WrappingSub};
 use num::{PrimInt, Signed};
 use std::convert::From;
@@ -31,7 +31,7 @@ where
     }
 }
 
-impl<E> UnitaryRing for ModularInts<E>
+impl<E> AdditiveGroup for ModularInts<E>
 where
     E: PrimInt + Signed + WrappingAdd + WrappingMul + WrappingSub + Debug + From<i8>,
 {
@@ -51,6 +51,15 @@ where
         elem1.wrapping_add(elem2)
     }
 
+    fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        elem1.wrapping_sub(elem2)
+    }
+}
+
+impl<E> UnitaryRing for ModularInts<E>
+where
+    E: PrimInt + Signed + WrappingAdd + WrappingMul + WrappingSub + Debug + From<i8>,
+{
     fn one(&self) -> Self::Elem {
         1.into()
     }

@@ -1,18 +1,7 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{Domain, EuclideanDomain, Field, IntegralDomain, UnitaryRing};
-
-/// The Euclidean ring of polynomials over the 2-element field.
-pub const F2X: Polynomials<crate::QuotientField<crate::CheckedInts<i8>>> =
-    Polynomials { base: crate::F2 };
-
-/// The Euclidean ring of polynomials over the 3-element field.
-pub const F3X: Polynomials<crate::QuotientField<crate::CheckedInts<i8>>> =
-    Polynomials { base: crate::F3 };
-
-/// The integral domain of polynomials over the ring of integers.
-pub const ZX: Polynomials<crate::Integers> = Polynomials { base: crate::Z };
+use crate::*;
 
 /// The ring of polynomials over a base ring or field where each element
 /// is represented as a vector whose last element, the leading coefficient (if
@@ -91,7 +80,7 @@ where
     }
 }
 
-impl<R> UnitaryRing for Polynomials<R>
+impl<R> AdditiveGroup for Polynomials<R>
 where
     R: UnitaryRing,
 {
@@ -131,7 +120,12 @@ where
             elem3
         }
     }
+}
 
+impl<R> UnitaryRing for Polynomials<R>
+where
+    R: UnitaryRing,
+{
     fn one(&self) -> Self::Elem {
         vec![self.base.one()]
     }
@@ -245,7 +239,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{QuotientField, I32};
 
     #[test]
     fn field_256() {

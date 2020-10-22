@@ -1,14 +1,11 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{
-    DistributiveLattice, Domain, EuclideanDomain, IntegralDomain, Lattice, PartialOrder,
-    UnitaryRing,
-};
+use crate::*;
 use num::{BigInt, Integer, One, Signed, Zero};
 
 /// The Euclidean ring of integers with arbitrary large values.
-pub const Z: Integers = Integers();
+pub const ZZ: Integers = Integers();
 
 /// The set of integers whose elements are
 /// [BigInt](../num/struct.BigInt.html) objects. The ring operations are the
@@ -24,7 +21,7 @@ impl Domain for Integers {
     }
 }
 
-impl UnitaryRing for Integers {
+impl AdditiveGroup for Integers {
     fn zero(&self) -> Self::Elem {
         Zero::zero()
     }
@@ -36,7 +33,9 @@ impl UnitaryRing for Integers {
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         elem1 + elem2
     }
+}
 
+impl UnitaryRing for Integers {
     fn one(&self) -> Self::Elem {
         One::one()
     }

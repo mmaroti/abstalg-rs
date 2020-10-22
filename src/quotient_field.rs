@@ -1,17 +1,17 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{Domain, EuclideanDomain, Field, IntegralDomain, UnitaryRing};
+use crate::*;
 
 /// The 2-element field represented as residue classes of integers modulo 2.
-pub const F2: QuotientField<crate::CheckedInts<i8>> = QuotientField {
-    base: crate::I8,
+pub const GF2: QuotientField<CheckedInts<i8>> = QuotientField {
+    base: I8,
     modulo: 2,
 };
 
 /// The 3-element field represented as residue classes of integers modulo 3.
-pub const F3: QuotientField<crate::CheckedInts<i8>> = QuotientField {
-    base: crate::I8,
+pub const GF3: QuotientField<CheckedInts<i8>> = QuotientField {
+    base: I8,
     modulo: 3,
 };
 
@@ -59,7 +59,7 @@ impl<R: EuclideanDomain> Domain for QuotientField<R> {
     }
 }
 
-impl<R: EuclideanDomain> UnitaryRing for QuotientField<R> {
+impl<R: EuclideanDomain> AdditiveGroup for QuotientField<R> {
     fn zero(&self) -> Self::Elem {
         self.base.zero()
     }
@@ -71,7 +71,9 @@ impl<R: EuclideanDomain> UnitaryRing for QuotientField<R> {
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.base.rem(&self.base.add(elem1, elem2), &self.modulo)
     }
+}
 
+impl<R: EuclideanDomain> UnitaryRing for QuotientField<R> {
     fn one(&self) -> Self::Elem {
         self.base.one()
     }
@@ -116,7 +118,7 @@ mod tests {
 
     #[test]
     fn field_1721() {
-        let field = QuotientField::new(crate::I32, 1721);
+        let field = QuotientField::new(I32, 1721);
 
         for a in -860..860 {
             assert!(field.contains(&a));

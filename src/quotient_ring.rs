@@ -1,28 +1,7 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{Domain, EuclideanDomain, UnitaryRing};
-
-/// The 2-element unitary ring represented as residue classes of integers
-/// modulo 2.
-pub const Z2: QuotientRing<crate::CheckedInts<i8>> = QuotientRing {
-    base: crate::I8,
-    modulo: 2,
-};
-
-/// The 3-element unitary ring represented as residue classes of integers
-/// modulo 3.
-pub const Z3: QuotientRing<crate::CheckedInts<i8>> = QuotientRing {
-    base: crate::I8,
-    modulo: 3,
-};
-
-/// The 4-element unitary ring represented as residue classes of integers
-/// modulo 2.
-pub const Z4: QuotientRing<crate::CheckedInts<i8>> = QuotientRing {
-    base: crate::I8,
-    modulo: 4,
-};
+use crate::*;
 
 /// A quotient ring of an Euclidean domain by a principal ideal.
 #[derive(Clone, Debug, Default)]
@@ -62,7 +41,7 @@ impl<R: EuclideanDomain> Domain for QuotientRing<R> {
     }
 }
 
-impl<R: EuclideanDomain> UnitaryRing for QuotientRing<R> {
+impl<R: EuclideanDomain> AdditiveGroup for QuotientRing<R> {
     fn zero(&self) -> Self::Elem {
         self.base.zero()
     }
@@ -74,7 +53,9 @@ impl<R: EuclideanDomain> UnitaryRing for QuotientRing<R> {
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.base.rem(&self.base.add(elem1, elem2), &self.modulo)
     }
+}
 
+impl<R: EuclideanDomain> UnitaryRing for QuotientRing<R> {
     fn one(&self) -> Self::Elem {
         self.base.one()
     }

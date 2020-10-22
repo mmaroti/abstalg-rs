@@ -1,11 +1,11 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{Domain, EuclideanDomain, Field, Integers, IntegralDomain, UnitaryRing};
+use crate::*;
 use num::rational::Ratio;
 
 /// The field of rational numbers with arbitrary large values.
-pub const Q: ReducedFractions<Integers> = ReducedFractions { base: Integers() };
+pub const QQ: ReducedFractions<Integers> = ReducedFractions { base: Integers() };
 
 /// The field of fractions over the elements of an Euclidean domain. The
 /// elements are ratios where the numerator and denominator are relative
@@ -66,7 +66,7 @@ where
     }
 }
 
-impl<R> UnitaryRing for ReducedFractions<R>
+impl<R> AdditiveGroup for ReducedFractions<R>
 where
     R: EuclideanDomain,
 {
@@ -95,7 +95,12 @@ where
         };
         self.reduce(&elem)
     }
+}
 
+impl<R> UnitaryRing for ReducedFractions<R>
+where
+    R: EuclideanDomain,
+{
     fn one(&self) -> Self::Elem {
         Self::Elem::new_raw(self.base.one(), self.base.one())
     }
@@ -146,7 +151,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CheckedInts, I32};
 
     #[test]
     fn ops() {

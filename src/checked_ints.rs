@@ -1,10 +1,7 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-use crate::{
-    DistributiveLattice, Domain, EuclideanDomain, IntegralDomain, Lattice, PartialOrder,
-    UnitaryRing,
-};
+use crate::*;
 use num::{PrimInt, Signed};
 use std::convert::From;
 use std::fmt::Debug;
@@ -58,7 +55,7 @@ where
     }
 }
 
-impl<E> UnitaryRing for CheckedInts<E>
+impl<E> AdditiveGroup for CheckedInts<E>
 where
     E: PrimInt + Signed + Debug + From<i8>,
 {
@@ -74,14 +71,19 @@ where
         self.zero().checked_sub(elem).unwrap()
     }
 
-    fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        elem1.checked_sub(elem2).unwrap()
-    }
-
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         elem1.checked_add(elem2).unwrap()
     }
 
+    fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        elem1.checked_sub(elem2).unwrap()
+    }
+}
+
+impl<E> UnitaryRing for CheckedInts<E>
+where
+    E: PrimInt + Signed + Debug + From<i8>,
+{
     fn one(&self) -> Self::Elem {
         1.into()
     }
@@ -186,7 +188,6 @@ impl<E> DistributiveLattice for CheckedInts<E> where E: PrimInt + Signed + Debug
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Integers;
     use num::BigInt;
 
     #[test]
