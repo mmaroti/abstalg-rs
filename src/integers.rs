@@ -55,6 +55,14 @@ impl UnitaryRing for Integers {
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         elem1 * elem2
     }
+
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        if elem.is_one() || *elem == (-1).into() {
+            Some(elem.clone())
+        } else {
+            None
+        }
+    }
 }
 
 impl IntegralDomain for Integers {

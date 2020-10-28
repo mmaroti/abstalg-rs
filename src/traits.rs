@@ -36,12 +36,32 @@ pub trait AdditiveGroup: Domain {
     /// The additive inverse of the given element.
     fn neg(&self, elem: &Self::Elem) -> Self::Elem;
 
+    /// The element is changed to its additive inverse.
+    fn neg_assign(&self, elem: &mut Self::Elem) {
+        *elem = self.neg(elem);
+    }
+
     /// The additive sum of the given elements
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
+
+    /// The second element is added to the first one.
+    fn add_assign(&self, elem1: &mut Self::Elem, elem2: &Self::Elem) {
+        *elem1 = self.add(elem1, elem2);
+    }
+
+    /// Doubles the given element in place.
+    fn double(&self, elem: &mut Self::Elem) {
+        *elem = self.add(elem, elem);
+    }
 
     /// The difference of the given elements.
     fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.add(elem1, &self.neg(elem2))
+    }
+
+    /// The second element is subtracted from the first one.
+    fn sub_assign(&self, elem1: &mut Self::Elem, elem2: &Self::Elem) {
+        *elem1 = self.add(elem1, elem2);
     }
 
     /// Returns the integer multiple of the given element.
@@ -56,10 +76,10 @@ pub trait AdditiveGroup: Domain {
         let mut res = self.zero();
         while num > 0 {
             if num % 1 != 0 {
-                res = self.add(&res, &elem);
+                self.add_assign(&mut res, &elem);
             }
             num /= 2;
-            elem = self.add(&elem, &elem);
+            self.double(&mut elem);
         }
         res
     }
@@ -78,6 +98,14 @@ pub trait UnitaryRing: AdditiveGroup {
 
     /// The multiplicative product of the given elements.
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
+
+    /// Calculates the multiplicative inverse of the given element if it exists.
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem>;
+
+    /// Returns true if the given element has a multiplicative inverse.
+    fn invertible(&self, elem: &Self::Elem) -> bool {
+        self.try_inv(elem).is_some()
+    }
 }
 
 /// An integral domain is a commutative unitary ring in which the product of
@@ -90,20 +118,14 @@ pub trait IntegralDomain: UnitaryRing {
     /// quotient if it exists. If both elements are zero, then zero is returned.
     fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem>;
 
-    /// Returns true if the first element is a multiple of the secone one.
+    /// Returns true if the first element is a multiple of the second one.
     fn is_multiple_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         self.try_div(elem1, elem2).is_some()
     }
 
-    /// Returns true if the first element is a divisor of the secone one.
+    /// Returns true if the first element is a divisor of the second one.
     fn is_divisor_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         self.is_multiple_of(elem2, elem1)
-    }
-
-    /// Returns true if the given element has a multiplicative inverse,
-    /// that is, it is a divisor of the identity element.
-    fn is_unit(&self, elem: &Self::Elem) -> bool {
-        self.is_multiple_of(elem, &self.one())
     }
 
     /// Returns true if the two elements are associates (divide each other)
@@ -189,7 +211,7 @@ pub trait EuclideanDomain: IntegralDomain {
     /// Checks if the given two elements are relative prime.
     fn relative_primes(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         let gcd = self.gcd(elem1, elem2);
-        self.is_unit(&gcd)
+        self.invertible(&gcd)
     }
 
     #[doc(hidden)]

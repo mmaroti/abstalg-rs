@@ -48,22 +48,26 @@ where
         Zero::zero()
     }
 
+    fn is_zero(&self, elem: &Self::Elem) -> bool {
+        elem.is_zero()
+    }
+
     fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        let r = -*elem;
-        assert!(r.is_finite());
-        r
+        let elem = -*elem;
+        assert!(elem.is_finite());
+        elem
     }
 
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let r = *elem1 + *elem2;
-        assert!(r.is_finite());
-        r
+        let elem = *elem1 + *elem2;
+        assert!(elem.is_finite());
+        elem
     }
 
     fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let r = *elem1 - *elem2;
-        assert!(r.is_finite());
-        r
+        let elem = *elem1 - *elem2;
+        assert!(elem.is_finite());
+        elem
     }
 
     fn multiple(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
@@ -81,9 +85,18 @@ where
     }
 
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let r = *elem1 * *elem2;
-        assert!(r.is_finite());
-        r
+        let elem = *elem1 * *elem2;
+        assert!(elem.is_finite());
+        elem
+    }
+
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        let elem = self.one() / *elem;
+        if elem.is_finite() {
+            Some(elem)
+        } else {
+            None
+        }
     }
 }
 
@@ -119,9 +132,9 @@ where
 
     fn div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         assert!(!self.is_zero(elem2));
-        let r = *elem1 / *elem2;
-        assert!(r.is_finite());
-        r
+        let elem = *elem1 / *elem2;
+        assert!(elem.is_finite());
+        elem
     }
 }
 

@@ -100,6 +100,14 @@ where
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         elem1.checked_mul(elem2).unwrap()
     }
+
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        if *elem == 1.into() || *elem == (-1).into() {
+            Some(*elem)
+        } else {
+            None
+        }
+    }
 }
 
 impl<E> IntegralDomain for CheckedInts<E>

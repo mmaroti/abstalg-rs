@@ -63,4 +63,33 @@ impl<R: EuclideanDomain> UnitaryRing for QuotientRing<R> {
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.base.rem(&self.base.mul(elem1, elem2), &self.modulo)
     }
+
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        assert!(!self.is_zero(elem));
+        let (g, _, r) = self.base.extended_gcd(&self.modulo, elem);
+        self.base.try_inv(&g).map(|a| self.mul(&a, &r))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn zstar_1584() {
+        let ring = QuotientRing::new(I32, 1584); // 16 * 9 *11
+
+        let mut count = 0;
+        for a in -791..792 {
+            assert!(ring.contains(&a));
+            if a != 0 {
+                if let Some(b) = ring.try_inv(&a) {
+                    assert!(ring.contains(&b));
+                    assert!(ring.is_one(&ring.mul(&a, &b)));
+                    count += 1;
+                }
+            }
+        }
+        assert_eq!(count, 8 * 6 * 10);
+    }
 }

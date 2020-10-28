@@ -117,6 +117,10 @@ where
         );
         self.reduce(&elem)
     }
+
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        self.try_div(&self.one(), elem)
+    }
 }
 
 impl<R> IntegralDomain for ReducedFractions<R>

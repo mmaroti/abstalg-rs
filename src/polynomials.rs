@@ -160,6 +160,15 @@ where
             elem3
         }
     }
+
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        if elem.len() == 1 {
+            if let Some(elem) = self.base.try_inv(&elem[0]) {
+                return Some(vec![elem]);
+            }
+        }
+        None
+    }
 }
 
 impl<R> IntegralDomain for Polynomials<R>

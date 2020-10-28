@@ -10,9 +10,6 @@ pub use integers::*;
 mod checked_ints;
 pub use checked_ints::*;
 
-mod modular_ints;
-pub use modular_ints::*;
-
 mod approx_floats;
 pub use approx_floats::*;
 

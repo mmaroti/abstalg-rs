@@ -81,6 +81,14 @@ impl<R: EuclideanDomain> UnitaryRing for QuotientField<R> {
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.base.rem(&self.base.mul(elem1, elem2), &self.modulo)
     }
+
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        if self.is_zero(elem) {
+            None
+        } else {
+            Some(self.inv(elem))
+        }
+    }
 }
 
 impl<R: EuclideanDomain> IntegralDomain for QuotientField<R> {
@@ -102,13 +110,10 @@ impl<R: EuclideanDomain> EuclideanDomain for QuotientField<R> {
 impl<R: EuclideanDomain> Field for QuotientField<R> {
     fn inv(&self, elem: &Self::Elem) -> Self::Elem {
         assert!(!self.is_zero(elem));
-        let (g, _, mut r) = self.base.extended_gcd(&self.modulo, elem);
-        if !self.base.is_one(&g) {
-            let (a, b) = self.base.quo_rem(&self.base.one(), &g);
-            assert!(self.base.is_zero(&b), "modulo was not irreducible");
-            r = self.base.mul(&r, &a);
-        }
-        self.base.rem(&r, &self.modulo)
+        let (g, _, r) = self.base.extended_gcd(&self.modulo, elem);
+        let a = self.base.try_inv(&g).expect("modulo was not irreducible");
+        println!("{:?}, {:?}, {:?}", g, r, a);
+        self.mul(&a, &r)
     }
 }
 
