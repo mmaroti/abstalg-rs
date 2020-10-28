@@ -66,7 +66,46 @@ where
     }
 }
 
-impl<R> AdditiveGroup for ReducedFractions<R>
+impl<R> Semigroup for ReducedFractions<R>
+where
+    R: EuclideanDomain,
+{
+    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        let elem = Self::Elem::new_raw(
+            self.base.mul(elem1.numer(), elem2.numer()),
+            self.base.mul(elem1.denom(), elem2.denom()),
+        );
+        self.reduce(&elem)
+    }
+}
+
+impl<R> Monoid for ReducedFractions<R>
+where
+    R: EuclideanDomain,
+{
+    fn one(&self) -> Self::Elem {
+        Self::Elem::new_raw(self.base.one(), self.base.one())
+    }
+
+    fn is_one(&self, elem: &Self::Elem) -> bool {
+        self.base.is_one(elem.numer()) && self.base.is_one(elem.denom())
+    }
+
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        if self.invertible(elem) {
+            let elem = Self::Elem::new_raw(elem.denom().clone(), elem.numer().clone());
+            Some(self.reduce(&elem))
+        } else {
+            None
+        }
+    }
+
+    fn invertible(&self, elem: &Self::Elem) -> bool {
+        !self.base.is_zero(elem.numer())
+    }
+}
+
+impl<R> AbelianGroup for ReducedFractions<R>
 where
     R: EuclideanDomain,
 {
@@ -96,32 +135,13 @@ where
         self.reduce(&elem)
     }
 
-    fn multiple(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
-        let elem = Self::Elem::new_raw(self.base.multiple(num, elem.numer()), elem.denom().clone());
+    fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+        let elem = Self::Elem::new_raw(self.base.times(num, elem.numer()), elem.denom().clone());
         self.reduce(&elem)
     }
 }
 
-impl<R> UnitaryRing for ReducedFractions<R>
-where
-    R: EuclideanDomain,
-{
-    fn one(&self) -> Self::Elem {
-        Self::Elem::new_raw(self.base.one(), self.base.one())
-    }
-
-    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let elem = Self::Elem::new_raw(
-            self.base.mul(elem1.numer(), elem2.numer()),
-            self.base.mul(elem1.denom(), elem2.denom()),
-        );
-        self.reduce(&elem)
-    }
-
-    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
-        self.try_div(&self.one(), elem)
-    }
-}
+impl<R> UnitaryRing for ReducedFractions<R> where R: EuclideanDomain {}
 
 impl<R> IntegralDomain for ReducedFractions<R>
 where

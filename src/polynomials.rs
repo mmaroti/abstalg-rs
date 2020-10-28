@@ -80,7 +80,50 @@ where
     }
 }
 
-impl<R> AdditiveGroup for Polynomials<R>
+impl<R> Semigroup for Polynomials<R>
+where
+    R: UnitaryRing,
+{
+    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        if elem1.is_empty() || elem2.is_empty() {
+            Vec::new()
+        } else {
+            let mut elem3 = Vec::with_capacity(elem1.len() + elem2.len() - 1);
+            elem3.resize(elem1.len() + elem2.len() - 1, self.base.zero());
+            for i in 0..elem1.len() {
+                for j in 0..elem2.len() {
+                    let a = self.base.mul(&elem1[i], &elem2[j]);
+                    elem3[i + j] = self.base.add(&elem3[i + j], &a);
+                }
+            }
+            elem3
+        }
+    }
+}
+
+impl<R> Monoid for Polynomials<R>
+where
+    R: UnitaryRing,
+{
+    fn one(&self) -> Self::Elem {
+        vec![self.base.one()]
+    }
+
+    fn is_one(&self, elem: &Self::Elem) -> bool {
+        elem.len() == 1 && self.base.is_one(&elem[0])
+    }
+
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        if elem.len() == 1 {
+            if let Some(elem) = self.base.try_inv(&elem[0]) {
+                return Some(vec![elem]);
+            }
+        }
+        None
+    }
+}
+
+impl<R> AbelianGroup for Polynomials<R>
 where
     R: UnitaryRing,
 {
@@ -121,8 +164,8 @@ where
         }
     }
 
-    fn multiple(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
-        let mut elem: Self::Elem = elem.iter().map(|a| self.base.multiple(num, a)).collect();
+    fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+        let mut elem: Self::Elem = elem.iter().map(|a| self.base.times(num, a)).collect();
         for i in (0..elem.len()).rev() {
             if !self.base.is_zero(&elem[i]) {
                 elem.resize(i + 1, self.base.zero());
@@ -133,43 +176,7 @@ where
     }
 }
 
-impl<R> UnitaryRing for Polynomials<R>
-where
-    R: UnitaryRing,
-{
-    fn one(&self) -> Self::Elem {
-        vec![self.base.one()]
-    }
-
-    fn is_one(&self, elem: &Self::Elem) -> bool {
-        elem.len() == 1 && self.base.is_one(&elem[0])
-    }
-
-    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        if elem1.is_empty() || elem2.is_empty() {
-            Vec::new()
-        } else {
-            let mut elem3 = Vec::with_capacity(elem1.len() + elem2.len() - 1);
-            elem3.resize(elem1.len() + elem2.len() - 1, self.base.zero());
-            for i in 0..elem1.len() {
-                for j in 0..elem2.len() {
-                    let a = self.base.mul(&elem1[i], &elem2[j]);
-                    elem3[i + j] = self.base.add(&elem3[i + j], &a);
-                }
-            }
-            elem3
-        }
-    }
-
-    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
-        if elem.len() == 1 {
-            if let Some(elem) = self.base.try_inv(&elem[0]) {
-                return Some(vec![elem]);
-            }
-        }
-        None
-    }
-}
+impl<R> UnitaryRing for Polynomials<R> where R: UnitaryRing {}
 
 impl<R> IntegralDomain for Polynomials<R>
 where

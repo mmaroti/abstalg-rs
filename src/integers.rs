@@ -21,7 +21,35 @@ impl Domain for Integers {
     }
 }
 
-impl AdditiveGroup for Integers {
+impl Semigroup for Integers {
+    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        elem1 * elem2
+    }
+}
+
+impl Monoid for Integers {
+    fn one(&self) -> Self::Elem {
+        One::one()
+    }
+
+    fn is_one(&self, elem: &Self::Elem) -> bool {
+        elem.is_one()
+    }
+
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        if self.invertible(elem) {
+            Some(elem.clone())
+        } else {
+            None
+        }
+    }
+
+    fn invertible(&self, elem: &Self::Elem) -> bool {
+        elem.is_one() || (-elem).is_one()
+    }
+}
+
+impl AbelianGroup for Integers {
     fn zero(&self) -> Self::Elem {
         Zero::zero()
     }
@@ -42,28 +70,12 @@ impl AdditiveGroup for Integers {
         elem1 - elem2
     }
 
-    fn multiple(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+    fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
         num * elem
     }
 }
 
-impl UnitaryRing for Integers {
-    fn one(&self) -> Self::Elem {
-        One::one()
-    }
-
-    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        elem1 * elem2
-    }
-
-    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
-        if elem.is_one() || *elem == (-1).into() {
-            Some(elem.clone())
-        } else {
-            None
-        }
-    }
-}
+impl UnitaryRing for Integers {}
 
 impl IntegralDomain for Integers {
     fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {

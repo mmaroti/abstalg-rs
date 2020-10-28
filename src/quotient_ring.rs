@@ -5,12 +5,18 @@ use crate::*;
 
 /// A quotient ring of an Euclidean domain by a principal ideal.
 #[derive(Clone, Debug, Default)]
-pub struct QuotientRing<R: EuclideanDomain> {
+pub struct QuotientRing<R>
+where
+    R: EuclideanDomain,
+{
     base: R,
     modulo: R::Elem,
 }
 
-impl<R: EuclideanDomain> QuotientRing<R> {
+impl<R> QuotientRing<R>
+where
+    R: EuclideanDomain,
+{
     /// Creates a new quotient ring from the given Euclidean domain and
     /// one of its element.
     pub fn new(base: R, modulo: R::Elem) -> Self {
@@ -29,7 +35,10 @@ impl<R: EuclideanDomain> QuotientRing<R> {
     }
 }
 
-impl<R: EuclideanDomain> Domain for QuotientRing<R> {
+impl<R> Domain for QuotientRing<R>
+where
+    R: EuclideanDomain,
+{
     type Elem = R::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
@@ -41,7 +50,37 @@ impl<R: EuclideanDomain> Domain for QuotientRing<R> {
     }
 }
 
-impl<R: EuclideanDomain> AdditiveGroup for QuotientRing<R> {
+impl<R> Semigroup for QuotientRing<R>
+where
+    R: EuclideanDomain,
+{
+    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        self.base.rem(&self.base.mul(elem1, elem2), &self.modulo)
+    }
+}
+
+impl<R> Monoid for QuotientRing<R>
+where
+    R: EuclideanDomain,
+{
+    fn one(&self) -> Self::Elem {
+        self.base.one()
+    }
+
+    fn is_one(&self, elem: &Self::Elem) -> bool {
+        self.base.is_one(elem)
+    }
+
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        let (g, _, r) = self.base.extended_gcd(&self.modulo, elem);
+        self.base.try_inv(&g).map(|a| self.mul(&a, &r))
+    }
+}
+
+impl<R> AbelianGroup for QuotientRing<R>
+where
+    R: EuclideanDomain,
+{
     fn zero(&self) -> Self::Elem {
         self.base.zero()
     }
@@ -55,21 +94,7 @@ impl<R: EuclideanDomain> AdditiveGroup for QuotientRing<R> {
     }
 }
 
-impl<R: EuclideanDomain> UnitaryRing for QuotientRing<R> {
-    fn one(&self) -> Self::Elem {
-        self.base.one()
-    }
-
-    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        self.base.rem(&self.base.mul(elem1, elem2), &self.modulo)
-    }
-
-    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
-        assert!(!self.is_zero(elem));
-        let (g, _, r) = self.base.extended_gcd(&self.modulo, elem);
-        self.base.try_inv(&g).map(|a| self.mul(&a, &r))
-    }
-}
+impl<R> UnitaryRing for QuotientRing<R> where R: EuclideanDomain {}
 
 #[cfg(test)]
 mod tests {

@@ -40,7 +40,36 @@ where
     }
 }
 
-impl<E> AdditiveGroup for ApproxFloats<E>
+impl<E> Semigroup for ApproxFloats<E>
+where
+    E: Float + Debug + Zero + One + From<isize>,
+{
+    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        let elem = *elem1 * *elem2;
+        assert!(elem.is_finite());
+        elem
+    }
+}
+
+impl<E> Monoid for ApproxFloats<E>
+where
+    E: Float + Debug + Zero + One + From<isize>,
+{
+    fn one(&self) -> Self::Elem {
+        One::one()
+    }
+
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        let elem = self.one() / *elem;
+        if elem.is_finite() {
+            Some(elem)
+        } else {
+            None
+        }
+    }
+}
+
+impl<E> AbelianGroup for ApproxFloats<E>
 where
     E: Float + Debug + Zero + One + From<isize>,
 {
@@ -70,35 +99,13 @@ where
         elem
     }
 
-    fn multiple(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+    fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
         let num: Self::Elem = num.into();
         num * *elem
     }
 }
 
-impl<E> UnitaryRing for ApproxFloats<E>
-where
-    E: Float + Debug + Zero + One + From<isize>,
-{
-    fn one(&self) -> Self::Elem {
-        One::one()
-    }
-
-    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let elem = *elem1 * *elem2;
-        assert!(elem.is_finite());
-        elem
-    }
-
-    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
-        let elem = self.one() / *elem;
-        if elem.is_finite() {
-            Some(elem)
-        } else {
-            None
-        }
-    }
-}
+impl<E> UnitaryRing for ApproxFloats<E> where E: Float + Debug + Zero + One + From<isize> {}
 
 impl<E> IntegralDomain for ApproxFloats<E>
 where

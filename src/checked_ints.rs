@@ -55,7 +55,41 @@ where
     }
 }
 
-impl<E> AdditiveGroup for CheckedInts<E>
+impl<E> Semigroup for CheckedInts<E>
+where
+    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
+{
+    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        elem1.checked_mul(elem2).unwrap()
+    }
+}
+
+impl<E> Monoid for CheckedInts<E>
+where
+    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
+{
+    fn one(&self) -> Self::Elem {
+        1.into()
+    }
+
+    fn is_one(&self, elem: &Self::Elem) -> bool {
+        *elem == 1.into()
+    }
+
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        if self.invertible(elem) {
+            Some(*elem)
+        } else {
+            None
+        }
+    }
+
+    fn invertible(&self, elem: &Self::Elem) -> bool {
+        *elem == 1.into() || *elem == (-1).into()
+    }
+}
+
+impl<E> AbelianGroup for CheckedInts<E>
 where
     E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
 {
@@ -79,36 +113,13 @@ where
         elem1.checked_sub(elem2).unwrap()
     }
 
-    fn multiple(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+    fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
         let num: Option<Self::Elem> = num.try_into().ok();
         elem.checked_mul(&num.expect("too large value")).unwrap()
     }
 }
 
-impl<E> UnitaryRing for CheckedInts<E>
-where
-    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
-{
-    fn one(&self) -> Self::Elem {
-        1.into()
-    }
-
-    fn is_one(&self, elem: &Self::Elem) -> bool {
-        *elem == 1.into()
-    }
-
-    fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        elem1.checked_mul(elem2).unwrap()
-    }
-
-    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
-        if *elem == 1.into() || *elem == (-1).into() {
-            Some(*elem)
-        } else {
-            None
-        }
-    }
-}
+impl<E> UnitaryRing for CheckedInts<E> where E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize> {}
 
 impl<E> IntegralDomain for CheckedInts<E>
 where
