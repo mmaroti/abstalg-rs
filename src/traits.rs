@@ -333,18 +333,18 @@ pub trait Field: EuclideanDomain {
 pub trait PartialOrder: Domain {
     /// Returns true if the first element is less than or equal to the
     /// second one in the lattice order.
-    fn less_or_equal(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool;
+    fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool;
 
     /// Returns true if the first element is strictly less than the
     /// second one.
     fn less_than(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        !self.equals(elem1, elem2) && self.less_or_equal(elem1, elem2)
+        !self.equals(elem1, elem2) && self.leq(elem1, elem2)
     }
 
     /// Returns true if one of the elements is less than or equal to
     /// the other.
     fn comparable(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.less_or_equal(elem1, elem2) || self.less_or_equal(elem2, elem1)
+        self.leq(elem1, elem2) || self.leq(elem2, elem1)
     }
 }
 

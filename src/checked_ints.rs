@@ -185,7 +185,7 @@ impl<E> PartialOrder for CheckedInts<E>
 where
     E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
 {
-    fn less_or_equal(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+    fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         *elem1 <= *elem2
     }
 }

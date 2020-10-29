@@ -33,7 +33,7 @@ impl<A: IntegralDomain> Domain for DivisibilityOrder<A> {
 }
 
 impl<A: IntegralDomain> PartialOrder for DivisibilityOrder<A> {
-    fn less_or_equal(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+    fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         self.0.divisible(elem2, elem1)
     }
 }
@@ -79,15 +79,15 @@ mod tests {
             for b in 0..50 {
                 let c = lat.meet(&a, &b);
                 assert!(lat.contains(&c));
-                assert!(lat.less_or_equal(&c, &a));
-                assert!(lat.less_or_equal(&c, &b));
+                assert!(lat.leq(&c, &a));
+                assert!(lat.leq(&c, &b));
 
                 let d = lat.join(&a, &b);
                 assert!(lat.contains(&d));
-                assert!(lat.less_or_equal(&a, &d));
-                assert!(lat.less_or_equal(&a, &d));
+                assert!(lat.leq(&a, &d));
+                assert!(lat.leq(&a, &d));
 
-                if lat.less_or_equal(&a, &b) {
+                if lat.leq(&a, &b) {
                     assert!(c == a);
                     assert!(d == b);
                 }

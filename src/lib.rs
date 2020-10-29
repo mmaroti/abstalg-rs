@@ -22,8 +22,8 @@ pub use quotient_field::*;
 mod divisibility_order;
 pub use divisibility_order::*;
 
-mod polynomials;
-pub use polynomials::*;
+mod polynomial_algebra;
+pub use polynomial_algebra::*;
 
 mod reduced_fractions;
 pub use reduced_fractions::*;
@@ -33,3 +33,6 @@ pub use multiplicative_group::*;
 
 mod additive_group;
 pub use additive_group::*;
+
+mod vector_algebra;
+pub use vector_algebra::*;

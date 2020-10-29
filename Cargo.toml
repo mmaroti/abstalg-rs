@@ -1,7 +1,7 @@
 [package]
 name = "abstalg"
 description = "Abstract algebraic structures for Rust" 
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Miklos Maroti <mmaroti@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/mmaroti/abstalg-rs/"

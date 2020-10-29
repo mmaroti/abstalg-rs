@@ -134,7 +134,7 @@ impl EuclideanDomain for Integers {
 }
 
 impl PartialOrder for Integers {
-    fn less_or_equal(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+    fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         elem1 <= elem2
     }
 }

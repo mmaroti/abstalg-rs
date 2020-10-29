@@ -153,7 +153,7 @@ impl<E> PartialOrder for ApproxFloats<E>
 where
     E: Float + Debug + Zero + One + From<isize>,
 {
-    fn less_or_equal(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+    fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         *elem1 <= *elem2
     }
 }

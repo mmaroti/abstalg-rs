@@ -6,13 +6,15 @@ use crate::*;
 /// The ring of polynomials over a base ring or field where each element
 /// is represented as a vector whose last element, the leading coefficient (if
 /// any) must be non-zero. This means that the empty vector is the zero
-/// element, and every polynomial has a unique representation.
+/// element, and every polynomial has a unique representation. Polynomials
+/// can be defined over any abelian group, though only the group operations
+/// will be available.
 #[derive(Clone, Debug, Default)]
-pub struct Polynomials<A>(pub A)
+pub struct PolynomialAlgebra<A>(pub A)
 where
     A: AbelianGroup;
 
-impl<A> Polynomials<A>
+impl<A> PolynomialAlgebra<A>
 where
     A: AbelianGroup,
 {
@@ -44,7 +46,7 @@ where
     }
 }
 
-impl<A> Domain for Polynomials<A>
+impl<A> Domain for PolynomialAlgebra<A>
 where
     A: AbelianGroup,
 {
@@ -75,7 +77,7 @@ where
     }
 }
 
-impl<A> Semigroup for Polynomials<A>
+impl<A> Semigroup for PolynomialAlgebra<A>
 where
     A: AbelianGroup + Semigroup,
 {
@@ -96,7 +98,7 @@ where
     }
 }
 
-impl<A> Monoid for Polynomials<A>
+impl<A> Monoid for PolynomialAlgebra<A>
 where
     A: AbelianGroup + Monoid,
 {
@@ -119,7 +121,7 @@ where
     }
 }
 
-impl<A> AbelianGroup for Polynomials<A>
+impl<A> AbelianGroup for PolynomialAlgebra<A>
 where
     A: AbelianGroup,
 {
@@ -172,9 +174,9 @@ where
     }
 }
 
-impl<A> UnitaryRing for Polynomials<A> where A: UnitaryRing {}
+impl<A> UnitaryRing for PolynomialAlgebra<A> where A: UnitaryRing {}
 
-impl<A> IntegralDomain for Polynomials<A>
+impl<A> IntegralDomain for PolynomialAlgebra<A>
 where
     A: IntegralDomain,
 {
@@ -229,7 +231,7 @@ where
     }
 }
 
-impl<F> EuclideanDomain for Polynomials<F>
+impl<F> EuclideanDomain for PolynomialAlgebra<F>
 where
     F: Field,
 {
@@ -272,7 +274,7 @@ mod tests {
     #[test]
     fn field_256() {
         let field1 = QuotientField::new(I32, 2);
-        let ring2 = Polynomials(field1);
+        let ring2 = PolynomialAlgebra(field1);
 
         // the irreducible polynomial 1 + x + x^3 + x^4 + x^8
         let poly = vec![1, 1, 0, 1, 1, 0, 0, 0, 1];
