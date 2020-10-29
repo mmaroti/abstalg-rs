@@ -4,7 +4,7 @@
 use crate::*;
 
 /// A quotient ring of an Euclidean domain by a principal ideal.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct QuotientRing<A>
 where
     A: EuclideanDomain,

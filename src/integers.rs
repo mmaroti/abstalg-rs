@@ -10,7 +10,7 @@ pub const ZZ: Integers = Integers();
 /// The set of integers whose elements are
 /// [BigInt](../num/struct.BigInt.html) objects. The ring operations are the
 /// normal ones. The lattice order is the normal total order.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Integers();
 
 impl Domain for Integers {

@@ -4,8 +4,8 @@
 use crate::*;
 
 /// The direct power of the given algebra where the elements are fixed sized
-/// vectors.
-#[derive(Clone, Debug, Default)]
+/// vectors. The algebraic operations are always acting coordinate-wise.
+#[derive(Clone, Debug)]
 pub struct VectorAlgebra<A>(pub A, pub usize)
 where
     A: Domain;
@@ -27,7 +27,7 @@ where
 
     /// Returns the constant vector containing the given element.
     pub fn diagonal(&self, elem: A::Elem) -> Vec<A::Elem> {
-        vec![elem; self.1]
+        vec![elem; self.len()]
     }
 }
 
@@ -38,19 +38,19 @@ where
     type Elem = Vec<A::Elem>;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        if elem.len() != self.1 {
+        if elem.len() != self.len() {
             false
         } else {
-            elem.iter().all(|a| self.0.contains(&a))
+            elem.iter().all(|a| self.base().contains(&a))
         }
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        assert!(elem1.len() == self.1 && elem2.len() == self.1);
+        assert!(elem1.len() == self.len() && elem2.len() == self.len());
         elem1
             .iter()
             .zip(elem2.iter())
-            .all(|(x, y)| self.0.equals(x, y))
+            .all(|(x, y)| self.base().equals(x, y))
     }
 }
 
@@ -59,25 +59,25 @@ where
     A: Semigroup,
 {
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        assert!(elem1.len() == self.1 && elem2.len() == self.1);
+        assert!(elem1.len() == self.len() && elem2.len() == self.len());
         elem1
             .iter()
             .zip(elem2.iter())
-            .map(|(x, y)| self.0.mul(x, y))
+            .map(|(x, y)| self.base().mul(x, y))
             .collect()
     }
 
     fn mul_assign(&self, elem1: &mut Self::Elem, elem2: &Self::Elem) {
-        assert!(elem1.len() == self.1 && elem2.len() == self.1);
+        assert!(elem1.len() == self.len() && elem2.len() == self.len());
         elem1
             .iter_mut()
             .zip(elem2.iter())
-            .for_each(|(x, y)| self.0.mul_assign(x, y));
+            .for_each(|(x, y)| self.base().mul_assign(x, y));
     }
 
     fn square(&self, elem: &mut Self::Elem) {
-        assert!(elem.len() == self.1);
-        elem.iter_mut().for_each(|x| self.0.square(x));
+        assert!(elem.len() == self.len());
+        elem.iter_mut().for_each(|x| self.base().square(x));
     }
 }
 
@@ -86,19 +86,19 @@ where
     A: Monoid,
 {
     fn one(&self) -> Self::Elem {
-        self.diagonal(self.0.one())
+        self.diagonal(self.base().one())
     }
 
     fn is_one(&self, elem: &Self::Elem) -> bool {
-        assert!(elem.len() == self.1);
-        elem.iter().all(|x| self.0.is_one(x))
+        assert!(elem.len() == self.len());
+        elem.iter().all(|x| self.base().is_one(x))
     }
 
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
-        assert!(elem.len() == self.1);
-        let mut v = Vec::with_capacity(self.1);
+        assert!(elem.len() == self.len());
+        let mut v = Vec::with_capacity(self.len());
         for x in elem.iter() {
-            if let Some(y) = self.0.try_inv(x) {
+            if let Some(y) = self.base().try_inv(x) {
                 v.push(y)
             } else {
                 return None;
@@ -108,8 +108,8 @@ where
     }
 
     fn invertible(&self, elem: &Self::Elem) -> bool {
-        assert!(elem.len() == self.1);
-        elem.iter().all(|x| self.0.invertible(x))
+        assert!(elem.len() == self.len());
+        elem.iter().all(|x| self.base().invertible(x))
     }
 }
 
@@ -118,8 +118,8 @@ where
     A: Group,
 {
     fn inv(&self, elem: &Self::Elem) -> Self::Elem {
-        assert!(elem.len() == self.1);
-        elem.iter().map(|x| self.0.inv(x)).collect()
+        assert!(elem.len() == self.len());
+        elem.iter().map(|x| self.base().inv(x)).collect()
     }
 }
 
@@ -128,61 +128,61 @@ where
     A: AbelianGroup,
 {
     fn zero(&self) -> Self::Elem {
-        self.diagonal(self.0.zero())
+        self.diagonal(self.base().zero())
     }
 
     fn is_zero(&self, elem: &Self::Elem) -> bool {
-        assert!(elem.len() == self.1);
-        elem.iter().all(|x| self.0.is_zero(x))
+        assert!(elem.len() == self.len());
+        elem.iter().all(|x| self.base().is_zero(x))
     }
 
     fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        assert!(elem.len() == self.1);
-        elem.iter().map(|x| self.0.neg(x)).collect()
+        assert!(elem.len() == self.len());
+        elem.iter().map(|x| self.base().neg(x)).collect()
     }
 
     fn neg_assign(&self, elem: &mut Self::Elem) {
-        assert!(elem.len() == self.1);
-        elem.iter_mut().for_each(|x| self.0.neg_assign(x))
+        assert!(elem.len() == self.len());
+        elem.iter_mut().for_each(|x| self.base().neg_assign(x))
     }
 
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        assert!(elem1.len() == self.1 && elem2.len() == self.1);
+        assert!(elem1.len() == self.len() && elem2.len() == self.len());
         elem1
             .iter()
             .zip(elem2.iter())
-            .map(|(x, y)| self.0.add(x, y))
+            .map(|(x, y)| self.base().add(x, y))
             .collect()
     }
 
     fn add_assign(&self, elem1: &mut Self::Elem, elem2: &Self::Elem) {
-        assert!(elem1.len() == self.1 && elem2.len() == self.1);
+        assert!(elem1.len() == self.len() && elem2.len() == self.len());
         elem1
             .iter_mut()
             .zip(elem2.iter())
-            .for_each(|(x, y)| self.0.add_assign(x, y));
+            .for_each(|(x, y)| self.base().add_assign(x, y));
     }
 
     fn double(&self, elem: &mut Self::Elem) {
-        assert!(elem.len() == self.1);
-        elem.iter_mut().for_each(|x| self.0.double(x))
+        assert!(elem.len() == self.len());
+        elem.iter_mut().for_each(|x| self.base().double(x))
     }
 
     fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        assert!(elem1.len() == self.1 && elem2.len() == self.1);
+        assert!(elem1.len() == self.len() && elem2.len() == self.len());
         elem1
             .iter()
             .zip(elem2.iter())
-            .map(|(x, y)| self.0.sub(x, y))
+            .map(|(x, y)| self.base().sub(x, y))
             .collect()
     }
 
     fn sub_assign(&self, elem1: &mut Self::Elem, elem2: &Self::Elem) {
-        assert!(elem1.len() == self.1 && elem2.len() == self.1);
+        assert!(elem1.len() == self.len() && elem2.len() == self.len());
         elem1
             .iter_mut()
             .zip(elem2.iter())
-            .for_each(|(x, y)| self.0.sub_assign(x, y));
+            .for_each(|(x, y)| self.base().sub_assign(x, y));
     }
 }
 
@@ -190,8 +190,8 @@ impl<A> UnitaryRing for VectorAlgebra<A>
 where
     A: UnitaryRing,
 {
-    fn integer(&self, elem: isize) -> Self::Elem {
-        self.diagonal(self.0.integer(elem))
+    fn int(&self, elem: isize) -> Self::Elem {
+        self.diagonal(self.base().int(elem))
     }
 }
 
@@ -200,11 +200,11 @@ where
     A: PartialOrder,
 {
     fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        assert!(elem1.len() == self.1 && elem2.len() == self.1);
+        assert!(elem1.len() == self.len() && elem2.len() == self.len());
         elem1
             .iter()
             .zip(elem2.iter())
-            .all(|(x, y)| self.0.leq(x, y))
+            .all(|(x, y)| self.base().leq(x, y))
     }
 }
 
@@ -213,20 +213,20 @@ where
     A: Lattice,
 {
     fn meet(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        assert!(elem1.len() == self.1 && elem2.len() == self.1);
+        assert!(elem1.len() == self.len() && elem2.len() == self.len());
         elem1
             .iter()
             .zip(elem2.iter())
-            .map(|(x, y)| self.0.meet(x, y))
+            .map(|(x, y)| self.base().meet(x, y))
             .collect()
     }
 
     fn join(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        assert!(elem1.len() == self.1 && elem2.len() == self.1);
+        assert!(elem1.len() == self.len() && elem2.len() == self.len());
         elem1
             .iter()
             .zip(elem2.iter())
-            .map(|(x, y)| self.0.join(x, y))
+            .map(|(x, y)| self.base().join(x, y))
             .collect()
     }
 }
@@ -236,11 +236,11 @@ where
     A: BoundedOrder,
 {
     fn max(&self) -> Self::Elem {
-        self.diagonal(self.0.max())
+        self.diagonal(self.base().max())
     }
 
     fn min(&self) -> Self::Elem {
-        self.diagonal(self.0.min())
+        self.diagonal(self.base().min())
     }
 }
 

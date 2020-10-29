@@ -20,7 +20,7 @@ pub const F64: ApproxFloats<f64> = ApproxFloats {
 /// number. NaN and infinity values are not considered as members, so all
 /// operations resulting one of these will panic. The lattice order is the
 /// normal total order, which is not bounded.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct ApproxFloats<E> {
     phantom: PhantomData<E>,
 }

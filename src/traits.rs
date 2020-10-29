@@ -143,7 +143,7 @@ pub trait AbelianGroup: Domain {
 /// examples are the rings of rectangular matrices, integers and polynomials.
 pub trait UnitaryRing: AbelianGroup + Monoid {
     /// Returns the integer multiple of the one element in the ring.
-    fn integer(&self, elem: isize) -> Self::Elem {
+    fn int(&self, elem: isize) -> Self::Elem {
         self.times(elem, &self.one())
     }
 }

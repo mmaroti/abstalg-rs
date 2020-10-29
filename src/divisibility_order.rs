@@ -8,7 +8,7 @@ use crate::*;
 /// zero, the smallest element is one. If the domain is Euclidean, this is a
 /// bounded distributive lattice where the meet is the greatest common divisor,
 /// the join is the least common multiple.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct DivisibilityOrder<A>(pub A)
 where
     A: IntegralDomain;

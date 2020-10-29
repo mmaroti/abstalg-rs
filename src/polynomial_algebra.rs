@@ -9,7 +9,7 @@ use crate::*;
 /// element, and every polynomial has a unique representation. Polynomials
 /// can be defined over any abelian group, though only the group operations
 /// will be available.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct PolynomialAlgebra<A>(pub A)
 where
     A: AbelianGroup;

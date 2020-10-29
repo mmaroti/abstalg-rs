@@ -36,7 +36,7 @@ pub const I64: CheckedInts<i64> = CheckedInts {
 /// of all integers, but some operations are going to panic if the
 /// mathematical result cannot be represented in the primitive type.
 /// The lattice order is the normal total order, which is not bounded.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct CheckedInts<E>
 where
     E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
@@ -215,7 +215,7 @@ mod tests {
 
     #[test]
     fn quo_rem() {
-        let ring1: CheckedInts<i32> = Default::default();
+        let ring1 = I32;
         let ring2 = Integers();
 
         let mut elems: Vec<i32> = Default::default();
@@ -264,7 +264,7 @@ mod tests {
 
     #[test]
     fn extended_gcd() {
-        let ring: CheckedInts<i32> = Default::default();
+        let ring = I32;
 
         for a in -10..10 {
             for b in -10..10 {

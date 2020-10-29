@@ -11,7 +11,7 @@ pub const QQ: ReducedFractions<Integers> = ReducedFractions(Integers());
 /// elements are ratios where the numerator and denominator are relative
 /// primes and the denominator is normalized with respect to its associate
 /// class.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct ReducedFractions<A>(pub A)
 where
     A: EuclideanDomain;

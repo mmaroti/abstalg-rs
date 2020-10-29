@@ -36,3 +36,6 @@ pub use additive_group::*;
 
 mod vector_algebra;
 pub use vector_algebra::*;
+
+mod matrix_ring;
+pub use matrix_ring::*;
