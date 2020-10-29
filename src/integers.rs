@@ -113,39 +113,22 @@ impl EuclideanDomain for Integers {
         assert!(!elem2.is_zero());
 
         let (quo, rem) = elem1.div_rem(elem2);
-
-        if elem1.is_positive() && elem2.is_positive() {
-            let tmp = elem2 - &rem;
-            if rem > tmp {
-                return (quo + 1, -tmp);
+        if rem.is_negative() {
+            if elem2.is_negative() {
+                (quo + 1, rem - elem2)
+            } else {
+                (quo - 1, rem + elem2)
             }
-        } else if !elem1.is_positive() && !elem2.is_positive() {
-            let tmp = elem2 - &rem;
-            if rem <= tmp {
-                return (quo + 1, -tmp);
-            }
-        } else if elem1.is_positive() && !elem2.is_positive() {
-            let tmp = elem2 + &rem;
-            if -&rem < tmp {
-                return (quo - 1, tmp);
-            }
-        } else if !elem1.is_positive() && elem2.is_positive() {
-            let tmp = elem2 + &rem;
-            if -&rem >= tmp {
-                return (quo - 1, tmp);
-            }
+        } else {
+            (quo, rem)
         }
-
-        (quo, rem)
     }
 
     fn reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         if elem2.is_zero() {
             true
         } else {
-            let elem1 = elem1 + elem1;
-            let elem2 = elem2.abs();
-            -&elem2 < elem1 && elem1 <= elem2
+            !elem1.is_negative() && *elem1 < elem2.abs()
         }
     }
 }
@@ -186,11 +169,7 @@ mod tests {
                 let (q, r) = ring.quo_rem(&n, &m);
                 println!("n={}, m={}, q={}, r={}", n, m, q, r);
                 assert_eq!(n, &m * &q + &r);
-                assert!(r.abs() <= (&r + &m).abs());
-                assert!(r.abs() <= (&r - &m).abs());
-
-                assert!(m.is_zero() || &r + &r <= m.abs());
-                assert!(m.is_zero() || &r + &r > -m.abs());
+                assert!(ring.zero() <= r && r < m.abs());
 
                 assert_eq!(q, ring.quo(&n, &m));
                 assert_eq!(r, ring.rem(&n, &m));
@@ -204,12 +183,7 @@ mod tests {
 
         assert_eq!(ring.rem(&0.into(), &3.into()), 0.into());
         assert_eq!(ring.rem(&1.into(), &3.into()), 1.into());
-        assert_eq!(ring.rem(&2.into(), &3.into()), (-1).into());
-
-        assert_eq!(ring.rem(&0.into(), &4.into()), 0.into());
-        assert_eq!(ring.rem(&1.into(), &4.into()), 1.into());
-        assert_eq!(ring.rem(&2.into(), &4.into()), 2.into());
-        assert_eq!(ring.rem(&3.into(), &4.into()), (-1).into());
+        assert_eq!(ring.rem(&2.into(), &3.into()), 2.into());
 
         assert_eq!(ring.rem(&0.into(), &(-2).into()), 0.into());
         assert_eq!(ring.rem(&1.into(), &(-2).into()), 1.into());

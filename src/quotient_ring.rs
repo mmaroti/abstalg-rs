@@ -105,7 +105,7 @@ mod tests {
         let ring = QuotientRing::new(I32, 1584); // 16 * 9 *11
 
         let mut count = 0;
-        for a in -791..792 {
+        for a in 0..1584 {
             assert!(ring.contains(&a));
             if a != 0 {
                 if let Some(b) = ring.try_inv(&a) {

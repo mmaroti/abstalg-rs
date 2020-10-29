@@ -168,7 +168,7 @@ mod tests {
     fn field_1721() {
         let field = QuotientField::new(I32, 1721);
 
-        for a in -860..860 {
+        for a in 0..1720 {
             assert!(field.contains(&a));
             if a != 0 {
                 let b = field.inv(&a);

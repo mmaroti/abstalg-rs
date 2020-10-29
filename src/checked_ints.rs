@@ -157,37 +157,26 @@ where
         let quo = elem1.checked_div(elem2).unwrap();
         let rem = *elem1 - quo * *elem2;
 
-        if *elem1 >= 0.into() && *elem2 >= 0.into() {
-            let tmp = *elem2 - rem;
-            if rem > tmp {
-                return (quo + 1.into(), -tmp);
+        if rem < 0.into() {
+            if *elem2 < 0.into() {
+                (quo + 1.into(), rem - *elem2)
+            } else {
+                (quo - 1.into(), rem + *elem2)
             }
-        } else if *elem1 < 0.into() && *elem2 < 0.into() {
-            let tmp = *elem2 - rem;
-            if rem <= tmp {
-                return (quo + 1.into(), -tmp);
-            }
-        } else if *elem1 >= 0.into() && *elem2 < 0.into() {
-            let tmp = *elem2 + rem;
-            if -rem < tmp {
-                return (quo - 1.into(), tmp);
-            }
-        } else if *elem1 < 0.into() && *elem2 >= 0.into() {
-            let tmp = *elem2 + rem;
-            if -rem >= tmp {
-                return (quo - 1.into(), tmp);
-            }
+        } else {
+            (quo, rem)
         }
-
-        (quo, rem)
     }
 
     fn reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         if *elem2 == 0.into() {
             true
+        } else if *elem1 < 0.into() {
+            false
+        } else if *elem2 >= 0.into() {
+            *elem1 < *elem2
         } else {
-            let elem2 = if *elem2 < 0.into() { *elem2 } else { -*elem2 };
-            (elem2 + 1.into()) / 2.into() <= *elem1 && *elem1 <= -(elem2 / 2.into())
+            -*elem1 > *elem2
         }
     }
 }
