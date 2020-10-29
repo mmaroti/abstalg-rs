@@ -9,63 +9,58 @@ use crate::*;
 /// bounded distributive lattice where the meet is the greatest common divisor,
 /// the join is the least common multiple.
 #[derive(Clone, Debug, Default)]
-pub struct DivisibilityOrder<R: IntegralDomain> {
-    base: R,
-}
+pub struct DivisibilityOrder<A>(pub A)
+where
+    A: IntegralDomain;
 
-impl<R: IntegralDomain> DivisibilityOrder<R> {
-    /// Creates a lattice from the given Euclidean domain.
-    pub fn new(base: R) -> Self {
-        DivisibilityOrder { base }
-    }
-
+impl<A: IntegralDomain> DivisibilityOrder<A> {
     /// Returns the base ring from which this lattice was constructed.
-    pub fn base(&self) -> &R {
-        &self.base
+    pub fn base(&self) -> &A {
+        &self.0
     }
 }
 
-impl<R: IntegralDomain> Domain for DivisibilityOrder<R> {
-    type Elem = R::Elem;
+impl<A: IntegralDomain> Domain for DivisibilityOrder<A> {
+    type Elem = A::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.base.is_zero(elem) || self.base.is_one(&self.base.associate_coef(elem))
+        self.0.is_zero(elem) || self.0.is_one(&self.0.associate_coef(elem))
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.base.equals(elem1, elem2)
+        self.0.equals(elem1, elem2)
     }
 }
 
-impl<R: IntegralDomain> PartialOrder for DivisibilityOrder<R> {
+impl<A: IntegralDomain> PartialOrder for DivisibilityOrder<A> {
     fn less_or_equal(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.base.divisible(elem2, elem1)
+        self.0.divisible(elem2, elem1)
     }
 }
 
-impl<R: IntegralDomain> BoundedOrder for DivisibilityOrder<R> {
+impl<A: IntegralDomain> BoundedOrder for DivisibilityOrder<A> {
     fn max(&self) -> Self::Elem {
-        self.base.zero()
+        self.0.zero()
     }
 
     fn min(&self) -> Self::Elem {
-        self.base.one()
+        self.0.one()
     }
 }
 
-impl<R: EuclideanDomain> Lattice for DivisibilityOrder<R> {
+impl<A: EuclideanDomain> Lattice for DivisibilityOrder<A> {
     fn meet(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let elem = self.base.gcd(elem1, elem2);
-        self.base.associate_repr(&elem)
+        let elem = self.0.gcd(elem1, elem2);
+        self.0.associate_repr(&elem)
     }
 
     fn join(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let elem = self.base.lcm(elem1, elem2);
-        self.base.associate_repr(&elem)
+        let elem = self.0.lcm(elem1, elem2);
+        self.0.associate_repr(&elem)
     }
 }
 
-impl<R: EuclideanDomain> DistributiveLattice for DivisibilityOrder<R> {}
+impl<A: EuclideanDomain> DistributiveLattice for DivisibilityOrder<A> {}
 
 #[cfg(test)]
 mod tests {
@@ -73,7 +68,7 @@ mod tests {
 
     #[test]
     fn order() {
-        let lat = DivisibilityOrder::new(I32);
+        let lat = DivisibilityOrder(I32);
 
         for a in -50..50 {
             if a < 0 {

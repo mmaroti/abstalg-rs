@@ -8,30 +8,23 @@ use crate::*;
 /// any) must be non-zero. This means that the empty vector is the zero
 /// element, and every polynomial has a unique representation.
 #[derive(Clone, Debug, Default)]
-pub struct Polynomials<R>
+pub struct Polynomials<A>(pub A)
 where
-    R: UnitaryRing,
+    A: AbelianGroup;
+
+impl<A> Polynomials<A>
+where
+    A: AbelianGroup,
 {
-    base: R,
-}
-
-impl<R: UnitaryRing> Polynomials<R> {
-    /// Creates a new ring of polynomials over the given ring. The ring cannot
-    /// be trivial, that is one must be different from zero.
-    pub fn new(base: R) -> Self {
-        assert!(!base.is_zero(&base.one()));
-        Polynomials { base }
-    }
-
     /// Returns the base ring from which this ring was created.
-    pub fn base(&self) -> &R {
-        &self.base
+    pub fn base(&self) -> &A {
+        &self.0
     }
 
     /// Returns the degree of the given polynomial. The zero polynomial has
     /// no degree.
     #[allow(clippy::ptr_arg)]
-    pub fn degree(&self, elem: &Vec<R::Elem>) -> Option<usize> {
+    pub fn degree(&self, elem: &Vec<A::Elem>) -> Option<usize> {
         if elem.is_empty() {
             None
         } else {
@@ -42,7 +35,7 @@ impl<R: UnitaryRing> Polynomials<R> {
     /// Returns the leading coefficient of the given polynomial. The zero
     /// polynomial has no leading coefficient.
     #[allow(clippy::ptr_arg)]
-    pub fn leading_coef(&self, elem: &Vec<R::Elem>) -> Option<R::Elem> {
+    pub fn leading_coef(&self, elem: &Vec<A::Elem>) -> Option<A::Elem> {
         if elem.is_empty() {
             None
         } else {
@@ -51,21 +44,23 @@ impl<R: UnitaryRing> Polynomials<R> {
     }
 }
 
-impl<R> Domain for Polynomials<R>
+impl<A> Domain for Polynomials<A>
 where
-    R: UnitaryRing,
+    A: AbelianGroup,
 {
-    type Elem = Vec<R::Elem>;
+    type Elem = Vec<A::Elem>;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        let mut last = &self.base.one();
-        for a in elem.iter() {
-            if !self.base.contains(a) {
-                return false;
+        if elem.is_empty() {
+            true
+        } else {
+            for a in elem.iter() {
+                if !self.0.contains(a) {
+                    return false;
+                }
             }
-            last = a;
+            !self.0.is_zero(&elem[elem.len() - 1])
         }
-        !self.base.is_zero(last)
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
@@ -75,25 +70,25 @@ where
             elem1
                 .iter()
                 .zip(elem2.iter())
-                .all(|(x, y)| self.base.equals(x, y))
+                .all(|(x, y)| self.0.equals(x, y))
         }
     }
 }
 
-impl<R> Semigroup for Polynomials<R>
+impl<A> Semigroup for Polynomials<A>
 where
-    R: UnitaryRing,
+    A: AbelianGroup + Semigroup,
 {
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         if elem1.is_empty() || elem2.is_empty() {
             Vec::new()
         } else {
             let mut elem3 = Vec::with_capacity(elem1.len() + elem2.len() - 1);
-            elem3.resize(elem1.len() + elem2.len() - 1, self.base.zero());
+            elem3.resize(elem1.len() + elem2.len() - 1, self.0.zero());
             for i in 0..elem1.len() {
                 for j in 0..elem2.len() {
-                    let a = self.base.mul(&elem1[i], &elem2[j]);
-                    elem3[i + j] = self.base.add(&elem3[i + j], &a);
+                    let a = self.0.mul(&elem1[i], &elem2[j]);
+                    elem3[i + j] = self.0.add(&elem3[i + j], &a);
                 }
             }
             elem3
@@ -101,21 +96,22 @@ where
     }
 }
 
-impl<R> Monoid for Polynomials<R>
+impl<A> Monoid for Polynomials<A>
 where
-    R: UnitaryRing,
+    A: AbelianGroup + Monoid,
 {
     fn one(&self) -> Self::Elem {
-        vec![self.base.one()]
+        assert!(!self.0.is_zero(&self.0.one()));
+        vec![self.0.one()]
     }
 
     fn is_one(&self, elem: &Self::Elem) -> bool {
-        elem.len() == 1 && self.base.is_one(&elem[0])
+        elem.len() == 1 && self.0.is_one(&elem[0])
     }
 
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         if elem.len() == 1 {
-            if let Some(elem) = self.base.try_inv(&elem[0]) {
+            if let Some(elem) = self.0.try_inv(&elem[0]) {
                 return Some(vec![elem]);
             }
         }
@@ -123,9 +119,9 @@ where
     }
 }
 
-impl<R> AbelianGroup for Polynomials<R>
+impl<A> AbelianGroup for Polynomials<A>
 where
-    R: UnitaryRing,
+    A: AbelianGroup,
 {
     fn zero(&self) -> Self::Elem {
         Vec::new()
@@ -136,7 +132,7 @@ where
     }
 
     fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        elem.iter().map(|a| self.base.neg(a)).collect()
+        elem.iter().map(|a| self.0.neg(a)).collect()
     }
 
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
@@ -148,15 +144,15 @@ where
             };
             let mut elem3 = elem1.clone();
             for i in 0..elem2.len() {
-                elem3[i] = self.base.add(&elem3[i], &elem2[i]);
+                elem3[i] = self.0.add(&elem3[i], &elem2[i]);
             }
             elem3
         } else {
             let mut elem3 = Vec::new();
             for i in 0..elem1.len() {
-                let a = self.base.add(&elem1[i], &elem2[i]);
-                if !self.base.is_zero(&a) {
-                    elem3.resize(i + 1, self.base.zero());
+                let a = self.0.add(&elem1[i], &elem2[i]);
+                if !self.0.is_zero(&a) {
+                    elem3.resize(i + 1, self.0.zero());
                     elem3[i] = a;
                 }
             }
@@ -165,10 +161,10 @@ where
     }
 
     fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
-        let mut elem: Self::Elem = elem.iter().map(|a| self.base.times(num, a)).collect();
+        let mut elem: Self::Elem = elem.iter().map(|a| self.0.times(num, a)).collect();
         for i in (0..elem.len()).rev() {
-            if !self.base.is_zero(&elem[i]) {
-                elem.resize(i + 1, self.base.zero());
+            if !self.0.is_zero(&elem[i]) {
+                elem.resize(i + 1, self.0.zero());
                 return elem;
             }
         }
@@ -176,11 +172,11 @@ where
     }
 }
 
-impl<R> UnitaryRing for Polynomials<R> where R: UnitaryRing {}
+impl<A> UnitaryRing for Polynomials<A> where A: UnitaryRing {}
 
-impl<R> IntegralDomain for Polynomials<R>
+impl<A> IntegralDomain for Polynomials<A>
 where
-    R: IntegralDomain,
+    A: IntegralDomain,
 {
     fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
         assert!(!self.is_zero(elem2));
@@ -192,23 +188,23 @@ where
             }
         } else {
             let mut quo = Vec::with_capacity(elem1.len() + elem2.len() - 1);
-            quo.resize(elem1.len() - elem2.len() + 1, self.base.zero());
+            quo.resize(elem1.len() - elem2.len() + 1, self.0.zero());
             let mut rem = elem1.clone();
 
             let a = &elem2[elem2.len() - 1];
-            assert!(!self.base.is_zero(a));
+            assert!(!self.0.is_zero(a));
 
             for i in (0..quo.len()).rev() {
-                quo[i] = self.base.try_div(&rem[i + elem2.len() - 1], a)?;
-                let b = self.base.neg(&quo[i]);
+                quo[i] = self.0.try_div(&rem[i + elem2.len() - 1], a)?;
+                let b = self.0.neg(&quo[i]);
                 for j in 0..(elem2.len() - 1) {
-                    let c = self.base.mul(&elem2[j], &b);
-                    self.base.add_assign(&mut rem[i + j], &c);
+                    let c = self.0.mul(&elem2[j], &b);
+                    self.0.add_assign(&mut rem[i + j], &c);
                 }
             }
 
             for d in rem.iter().take(elem2.len() - 1) {
-                if !self.base.is_zero(d) {
+                if !self.0.is_zero(d) {
                     return None;
                 }
             }
@@ -220,15 +216,15 @@ where
         if elem.is_empty() {
             self.zero()
         } else {
-            let coef = self.base.associate_coef(&elem[elem.len() - 1]);
-            elem.iter().map(|x| self.base.mul(x, &coef)).collect()
+            let coef = self.0.associate_coef(&elem[elem.len() - 1]);
+            elem.iter().map(|x| self.0.mul(x, &coef)).collect()
         }
     }
 
     fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
         assert!(!elem.is_empty());
         let elem = &elem[elem.len() - 1];
-        let elem = self.base.associate_coef(elem);
+        let elem = self.0.associate_coef(elem);
         vec![elem]
     }
 }
@@ -244,23 +240,23 @@ where
         }
 
         let mut quo = Vec::with_capacity(elem1.len() - elem2.len() + 1);
-        quo.resize(elem1.len() - elem2.len() + 1, self.base.zero());
+        quo.resize(elem1.len() - elem2.len() + 1, self.0.zero());
         let mut rem = elem1.clone();
 
         let a = &elem2[elem2.len() - 1];
-        assert!(!self.base.is_zero(a));
+        assert!(!self.0.is_zero(a));
 
         for i in (0..quo.len()).rev() {
-            quo[i] = self.base.div(&rem[i + elem2.len() - 1], a);
-            let b = self.base.neg(&quo[i]);
+            quo[i] = self.0.div(&rem[i + elem2.len() - 1], a);
+            let b = self.0.neg(&quo[i]);
             for j in 0..(elem2.len() - 1) {
-                let c = self.base.mul(&elem2[j], &b);
-                rem[i + j] = self.base.add(&rem[i + j], &c);
+                let c = self.0.mul(&elem2[j], &b);
+                rem[i + j] = self.0.add(&rem[i + j], &c);
             }
         }
 
         let mut i = elem2.len() - 1;
-        while i > 0 && self.base.is_zero(&rem[i - 1]) {
+        while i > 0 && self.0.is_zero(&rem[i - 1]) {
             i -= 1;
         }
         rem.truncate(i);
@@ -276,7 +272,7 @@ mod tests {
     #[test]
     fn field_256() {
         let field1 = QuotientField::new(I32, 2);
-        let ring2 = Polynomials::new(field1);
+        let ring2 = Polynomials(field1);
 
         // the irreducible polynomial 1 + x + x^3 + x^4 + x^8
         let poly = vec![1, 1, 0, 1, 1, 0, 0, 0, 1];

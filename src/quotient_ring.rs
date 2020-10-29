@@ -5,41 +5,41 @@ use crate::*;
 
 /// A quotient ring of an Euclidean domain by a principal ideal.
 #[derive(Clone, Debug, Default)]
-pub struct QuotientRing<R>
+pub struct QuotientRing<A>
 where
-    R: EuclideanDomain,
+    A: EuclideanDomain,
 {
-    base: R,
-    modulo: R::Elem,
+    base: A,
+    modulo: A::Elem,
 }
 
-impl<R> QuotientRing<R>
+impl<A> QuotientRing<A>
 where
-    R: EuclideanDomain,
+    A: EuclideanDomain,
 {
     /// Creates a new quotient ring from the given Euclidean domain and
     /// one of its element.
-    pub fn new(base: R, modulo: R::Elem) -> Self {
+    pub fn new(base: A, modulo: A::Elem) -> Self {
         assert!(base.contains(&modulo));
         QuotientRing { base, modulo }
     }
 
     /// Returns the base ring from which this ring was constructed.
-    pub fn base(&self) -> &R {
+    pub fn base(&self) -> &A {
         &self.base
     }
 
     /// Returns the modulo element from which this ring was constructed.
-    pub fn modulo(&self) -> &R::Elem {
+    pub fn modulo(&self) -> &A::Elem {
         &self.modulo
     }
 }
 
-impl<R> Domain for QuotientRing<R>
+impl<A> Domain for QuotientRing<A>
 where
-    R: EuclideanDomain,
+    A: EuclideanDomain,
 {
-    type Elem = R::Elem;
+    type Elem = A::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
         self.base.reduced(elem, &self.modulo)
@@ -50,18 +50,18 @@ where
     }
 }
 
-impl<R> Semigroup for QuotientRing<R>
+impl<A> Semigroup for QuotientRing<A>
 where
-    R: EuclideanDomain,
+    A: EuclideanDomain,
 {
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.base.rem(&self.base.mul(elem1, elem2), &self.modulo)
     }
 }
 
-impl<R> Monoid for QuotientRing<R>
+impl<A> Monoid for QuotientRing<A>
 where
-    R: EuclideanDomain,
+    A: EuclideanDomain,
 {
     fn one(&self) -> Self::Elem {
         self.base.one()
@@ -77,9 +77,9 @@ where
     }
 }
 
-impl<R> AbelianGroup for QuotientRing<R>
+impl<A> AbelianGroup for QuotientRing<A>
 where
-    R: EuclideanDomain,
+    A: EuclideanDomain,
 {
     fn zero(&self) -> Self::Elem {
         self.base.zero()
@@ -94,7 +94,7 @@ where
     }
 }
 
-impl<R> UnitaryRing for QuotientRing<R> where R: EuclideanDomain {}
+impl<A> UnitaryRing for QuotientRing<A> where A: EuclideanDomain {}
 
 #[cfg(test)]
 mod tests {
