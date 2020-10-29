@@ -42,7 +42,7 @@ where
     type Elem = R::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.base.is_reduced(elem, &self.modulo)
+        self.base.reduced(elem, &self.modulo)
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {

@@ -5,7 +5,7 @@ use crate::*;
 
 /// The additive group reduct of rings and vector spaces.
 #[derive(Clone, Debug, Default)]
-pub struct AdditiveGroup<A>(A)
+pub struct AdditiveGroup<A>(pub A)
 where
     A: AbelianGroup;
 

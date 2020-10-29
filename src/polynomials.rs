@@ -183,7 +183,8 @@ where
     R: IntegralDomain,
 {
     fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
-        if elem2.is_empty() || elem1.len() < elem2.len() {
+        assert!(!self.is_zero(elem2));
+        if elem1.len() < elem2.len() {
             if elem1.is_empty() {
                 Some(self.zero())
             } else {
@@ -202,7 +203,7 @@ where
                 let b = self.base.neg(&quo[i]);
                 for j in 0..(elem2.len() - 1) {
                     let c = self.base.mul(&elem2[j], &b);
-                    rem[i + j] = self.base.add(&rem[i + j], &c);
+                    self.base.add_assign(&mut rem[i + j], &c);
                 }
             }
 
@@ -215,16 +216,20 @@ where
         }
     }
 
-    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
+    fn associate_repr(&self, elem: &Self::Elem) -> Self::Elem {
         if elem.is_empty() {
-            (self.zero(), self.one())
+            self.zero()
         } else {
-            let last = elem.len() - 1;
-            let (repr, unit) = self.base.associate_repr(&elem[last]);
-            let mut elem: Self::Elem = elem.iter().map(|x| self.base.mul(x, &unit)).collect();
-            elem[last] = repr; // overwrite for approximate operations
-            (elem, vec![unit])
+            let coef = self.base.associate_coef(&elem[elem.len() - 1]);
+            elem.iter().map(|x| self.base.mul(x, &coef)).collect()
         }
+    }
+
+    fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
+        assert!(!elem.is_empty());
+        let elem = &elem[elem.len() - 1];
+        let elem = self.base.associate_coef(elem);
+        vec![elem]
     }
 }
 
@@ -233,33 +238,34 @@ where
     F: Field,
 {
     fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        if elem2.is_empty() || elem1.len() < elem2.len() {
-            (self.zero(), elem1.clone())
-        } else {
-            let mut quo = Vec::with_capacity(elem1.len() + elem2.len() - 1);
-            quo.resize(elem1.len() - elem2.len() + 1, self.base.zero());
-            let mut rem = elem1.clone();
-
-            let a = &elem2[elem2.len() - 1];
-            assert!(!self.base.is_zero(a));
-
-            for i in (0..quo.len()).rev() {
-                quo[i] = self.base.div(&rem[i + elem2.len() - 1], a);
-                let b = self.base.neg(&quo[i]);
-                for j in 0..(elem2.len() - 1) {
-                    let c = self.base.mul(&elem2[j], &b);
-                    rem[i + j] = self.base.add(&rem[i + j], &c);
-                }
-            }
-
-            let mut i = elem2.len() - 1;
-            while i > 0 && self.base.is_zero(&rem[i - 1]) {
-                i -= 1;
-            }
-            rem.truncate(i);
-
-            (quo, rem)
+        assert!(!elem2.is_empty());
+        if elem1.len() < elem2.len() {
+            return (self.zero(), elem1.clone());
         }
+
+        let mut quo = Vec::with_capacity(elem1.len() - elem2.len() + 1);
+        quo.resize(elem1.len() - elem2.len() + 1, self.base.zero());
+        let mut rem = elem1.clone();
+
+        let a = &elem2[elem2.len() - 1];
+        assert!(!self.base.is_zero(a));
+
+        for i in (0..quo.len()).rev() {
+            quo[i] = self.base.div(&rem[i + elem2.len() - 1], a);
+            let b = self.base.neg(&quo[i]);
+            for j in 0..(elem2.len() - 1) {
+                let c = self.base.mul(&elem2[j], &b);
+                rem[i + j] = self.base.add(&rem[i + j], &c);
+            }
+        }
+
+        let mut i = elem2.len() - 1;
+        while i > 0 && self.base.is_zero(&rem[i - 1]) {
+            i -= 1;
+        }
+        rem.truncate(i);
+
+        (quo, rem)
     }
 }
 

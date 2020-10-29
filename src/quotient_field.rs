@@ -60,7 +60,7 @@ where
     type Elem = R::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.base.is_reduced(elem, &self.modulo)
+        self.base.reduced(elem, &self.modulo)
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
@@ -129,8 +129,12 @@ where
         self.auto_try_div(elem1, elem2)
     }
 
-    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
+    fn associate_repr(&self, elem: &Self::Elem) -> Self::Elem {
         self.auto_associate_repr(elem)
+    }
+
+    fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
+        self.auto_associate_coef(elem)
     }
 }
 

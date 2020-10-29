@@ -115,8 +115,12 @@ where
         self.auto_try_div(elem1, elem2)
     }
 
-    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
+    fn associate_repr(&self, elem: &Self::Elem) -> Self::Elem {
         self.auto_associate_repr(elem)
+    }
+
+    fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
+        self.auto_associate_coef(elem)
     }
 }
 

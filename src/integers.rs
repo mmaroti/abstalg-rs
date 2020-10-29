@@ -82,7 +82,7 @@ impl IntegralDomain for Integers {
         self.auto_try_div(elem1, elem2)
     }
 
-    fn is_multiple_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+    fn divisible(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         if elem2.is_zero() {
             elem1.is_zero()
         } else {
@@ -90,49 +90,56 @@ impl IntegralDomain for Integers {
         }
     }
 
-    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        if *elem < 0.into() {
-            (self.neg(elem), (-1).into())
+    fn associate_repr(&self, elem: &Self::Elem) -> Self::Elem {
+        if elem.is_negative() {
+            self.neg(elem)
         } else {
-            (elem.clone(), 1.into())
+            elem.clone()
+        }
+    }
+
+    fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
+        assert!(!elem.is_zero());
+        if elem.is_negative() {
+            self.neg(&One::one())
+        } else {
+            One::one()
         }
     }
 }
 
 impl EuclideanDomain for Integers {
     fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        if elem2.is_zero() {
-            (BigInt::zero(), elem1.clone())
-        } else {
-            let (quo, rem) = elem1.div_rem(elem2);
+        assert!(!elem2.is_zero());
 
-            if elem1.is_positive() && elem2.is_positive() {
-                let tmp = elem2 - &rem;
-                if rem > tmp {
-                    return (quo + 1, -tmp);
-                }
-            } else if !elem1.is_positive() && !elem2.is_positive() {
-                let tmp = elem2 - &rem;
-                if rem <= tmp {
-                    return (quo + 1, -tmp);
-                }
-            } else if elem1.is_positive() && !elem2.is_positive() {
-                let tmp = elem2 + &rem;
-                if -&rem < tmp {
-                    return (quo - 1, tmp);
-                }
-            } else if !elem1.is_positive() && elem2.is_positive() {
-                let tmp = elem2 + &rem;
-                if -&rem >= tmp {
-                    return (quo - 1, tmp);
-                }
+        let (quo, rem) = elem1.div_rem(elem2);
+
+        if elem1.is_positive() && elem2.is_positive() {
+            let tmp = elem2 - &rem;
+            if rem > tmp {
+                return (quo + 1, -tmp);
             }
-
-            (quo, rem)
+        } else if !elem1.is_positive() && !elem2.is_positive() {
+            let tmp = elem2 - &rem;
+            if rem <= tmp {
+                return (quo + 1, -tmp);
+            }
+        } else if elem1.is_positive() && !elem2.is_positive() {
+            let tmp = elem2 + &rem;
+            if -&rem < tmp {
+                return (quo - 1, tmp);
+            }
+        } else if !elem1.is_positive() && elem2.is_positive() {
+            let tmp = elem2 + &rem;
+            if -&rem >= tmp {
+                return (quo - 1, tmp);
+            }
         }
+
+        (quo, rem)
     }
 
-    fn is_reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+    fn reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         if elem2.is_zero() {
             true
         } else {
@@ -172,6 +179,9 @@ mod tests {
         for n in -40..40 {
             let n: BigInt = n.into();
             for m in -40..40 {
+                if m == 0 {
+                    continue;
+                }
                 let m: BigInt = m.into();
                 let (q, r) = ring.quo_rem(&n, &m);
                 println!("n={}, m={}, q={}, r={}", n, m, q, r);
@@ -184,8 +194,8 @@ mod tests {
 
                 assert_eq!(q, ring.quo(&n, &m));
                 assert_eq!(r, ring.rem(&n, &m));
-                assert_eq!(ring.is_zero(&r), ring.is_multiple_of(&n, &m));
-                assert_eq!(ring.is_zero(&q), ring.is_reduced(&n, &m));
+                assert_eq!(ring.is_zero(&r), ring.divisible(&n, &m));
+                assert_eq!(ring.is_zero(&q), ring.reduced(&n, &m));
             }
         }
 

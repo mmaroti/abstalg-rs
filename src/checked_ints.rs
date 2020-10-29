@@ -129,11 +129,20 @@ where
         self.auto_try_div(elem1, elem2)
     }
 
-    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
+    fn associate_repr(&self, elem: &Self::Elem) -> Self::Elem {
         if *elem < 0.into() {
-            (self.neg(elem), (-1).into())
+            self.neg(elem)
         } else {
-            (*elem, 1.into())
+            *elem
+        }
+    }
+
+    fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
+        assert!(*elem != 0.into());
+        if *elem < 0.into() {
+            (-1).into()
+        } else {
+            1.into()
         }
     }
 }
@@ -143,39 +152,37 @@ where
     E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
 {
     fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        if *elem2 == 0.into() {
-            (0.into(), *elem1)
-        } else {
-            let quo = elem1.checked_div(elem2).unwrap();
-            let rem = *elem1 - quo * *elem2;
+        assert!(*elem2 != 0.into());
 
-            if *elem1 >= 0.into() && *elem2 >= 0.into() {
-                let tmp = *elem2 - rem;
-                if rem > tmp {
-                    return (quo + 1.into(), -tmp);
-                }
-            } else if *elem1 < 0.into() && *elem2 < 0.into() {
-                let tmp = *elem2 - rem;
-                if rem <= tmp {
-                    return (quo + 1.into(), -tmp);
-                }
-            } else if *elem1 >= 0.into() && *elem2 < 0.into() {
-                let tmp = *elem2 + rem;
-                if -rem < tmp {
-                    return (quo - 1.into(), tmp);
-                }
-            } else if *elem1 < 0.into() && *elem2 >= 0.into() {
-                let tmp = *elem2 + rem;
-                if -rem >= tmp {
-                    return (quo - 1.into(), tmp);
-                }
+        let quo = elem1.checked_div(elem2).unwrap();
+        let rem = *elem1 - quo * *elem2;
+
+        if *elem1 >= 0.into() && *elem2 >= 0.into() {
+            let tmp = *elem2 - rem;
+            if rem > tmp {
+                return (quo + 1.into(), -tmp);
             }
-
-            (quo, rem)
+        } else if *elem1 < 0.into() && *elem2 < 0.into() {
+            let tmp = *elem2 - rem;
+            if rem <= tmp {
+                return (quo + 1.into(), -tmp);
+            }
+        } else if *elem1 >= 0.into() && *elem2 < 0.into() {
+            let tmp = *elem2 + rem;
+            if -rem < tmp {
+                return (quo - 1.into(), tmp);
+            }
+        } else if *elem1 < 0.into() && *elem2 >= 0.into() {
+            let tmp = *elem2 + rem;
+            if -rem >= tmp {
+                return (quo - 1.into(), tmp);
+            }
         }
+
+        (quo, rem)
     }
 
-    fn is_reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+    fn reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         if *elem2 == 0.into() {
             true
         } else {
@@ -238,6 +245,9 @@ mod tests {
         for &n1 in elems.iter() {
             let n2: BigInt = n1.into();
             for &m1 in elems.iter() {
+                if m1 == 0 {
+                    continue;
+                }
                 let m2: BigInt = m1.into();
 
                 let (q2, r2) = ring2.quo_rem(&n2, &m2);
@@ -251,11 +261,8 @@ mod tests {
                     assert_eq!(q2, q1.into());
                     assert_eq!(r2, r1.into());
 
-                    assert_eq!(
-                        ring1.is_multiple_of(&n1, &m1),
-                        ring2.is_multiple_of(&n2, &m2)
-                    );
-                    assert_eq!(ring1.is_reduced(&n1, &m1), ring2.is_reduced(&n2, &m2));
+                    assert_eq!(ring1.divisible(&n1, &m1), ring2.divisible(&n2, &m2));
+                    assert_eq!(ring1.reduced(&n1, &m1), ring2.reduced(&n2, &m2));
                 } else {
                     let result = std::panic::catch_unwind(|| {
                         ring1.quo_rem(&n1, &m1);
@@ -276,8 +283,8 @@ mod tests {
                 println!("a:{}, b:{}, g:{}, x:{}, y:{}", a, b, g, x, y);
                 assert_eq!(g, a * x + b * y);
                 assert_eq!(g, ring.gcd(&a, &b));
-                assert!(ring.is_multiple_of(&a, &g));
-                assert!(ring.is_multiple_of(&b, &g));
+                assert!(ring.divisible(&a, &g));
+                assert!(ring.divisible(&b, &g));
             }
         }
     }

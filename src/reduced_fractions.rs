@@ -39,10 +39,14 @@ where
     pub fn reduce(&self, elem: &Ratio<R::Elem>) -> Ratio<R::Elem> {
         assert!(!self.base.is_zero(elem.denom()));
         let gcd = self.base.gcd(elem.numer(), elem.denom());
-        let denom = self.base.quo(elem.denom(), &gcd);
-        let (denom, mult) = self.base.associate_repr(&denom);
         let numer = self.base.quo(elem.numer(), &gcd);
-        let numer = self.base.mul(&numer, &mult);
+        let denom = self.base.quo(elem.denom(), &gcd);
+        let coef = self.base.associate_coef(&denom);
+        let (numer, denom) = if !self.base.is_one(&coef) {
+            (self.base.mul(&numer, &coef), self.base.mul(&denom, &coef))
+        } else {
+            (numer, denom)
+        };
         Ratio::<R::Elem>::new_raw(numer, denom)
     }
 }
@@ -55,9 +59,7 @@ where
 
     fn contains(&self, elem: &Self::Elem) -> bool {
         self.base.relative_primes(elem.numer(), elem.denom())
-            && self
-                .base
-                .equals(&self.base.associate_repr(elem.denom()).0, elem.denom())
+            && self.base.is_one(&self.base.associate_coef(elem.denom()))
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
@@ -147,12 +149,16 @@ impl<R> IntegralDomain for ReducedFractions<R>
 where
     R: EuclideanDomain,
 {
-    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
+    fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
+        Some(self.div(elem1, elem2))
+    }
+
+    fn associate_repr(&self, elem: &Self::Elem) -> Self::Elem {
         self.auto_associate_repr(elem)
     }
 
-    fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
-        Some(self.div(elem1, elem2))
+    fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
+        self.auto_associate_coef(elem)
     }
 }
 
@@ -171,9 +177,15 @@ where
 {
     fn inv(&self, elem: &Self::Elem) -> Self::Elem {
         assert!(!self.base.is_zero(elem.numer()));
-        let (denom, mult) = self.base.associate_repr(elem.numer());
-        let numer = self.base.mul(elem.denom(), &mult);
-        Self::Elem::new_raw(numer, denom)
+        let numer = elem.denom();
+        let denom = elem.numer();
+        let coef = self.base.associate_coef(&denom);
+        let (numer, denom) = if !self.base.is_one(&coef) {
+            (self.base.mul(&numer, &coef), self.base.mul(&denom, &coef))
+        } else {
+            (numer.clone(), denom.clone())
+        };
+        Ratio::<R::Elem>::new_raw(numer, denom)
     }
 }
 

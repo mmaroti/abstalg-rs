@@ -4,12 +4,13 @@
 //! A module that contains the basic sets on which various algebraic structures
 //! are implemented.
 
+use crate::*;
 use std::fmt::Debug;
 
 /// An arbitrary set of elements where not all representable objects are
 /// members of the set. The same element can be represented by different
 /// objects, thus the `equals` method shall be used in place of `==`.
-pub trait Domain {
+pub trait Domain: Clone {
     /// The type of the elements of this domain.
     type Elem: Clone + Debug;
 
@@ -121,32 +122,20 @@ pub trait AbelianGroup: Domain {
 
     /// The difference of the given elements.
     fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        self.add(elem1, &self.neg(elem2))
+        let mut elem = self.neg(elem2);
+        self.add_assign(&mut elem, elem1);
+        elem
     }
 
     /// The second element is subtracted from the first one.
     fn sub_assign(&self, elem1: &mut Self::Elem, elem2: &Self::Elem) {
-        *elem1 = self.add(elem1, elem2);
+        self.add_assign(elem1, &self.neg(elem2));
     }
 
     /// Returns an integer multiple of the given element.
-    fn times(&self, mut num: isize, elem: &Self::Elem) -> Self::Elem {
-        let mut elem = if num < 0 {
-            num = -num;
-            self.neg(elem)
-        } else {
-            elem.clone()
-        };
-
-        let mut res = self.zero();
-        while num > 0 {
-            if num % 2 != 0 {
-                self.add_assign(&mut res, &elem);
-            }
-            num /= 2;
-            self.double(&mut elem);
-        }
-        res
+    fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+        let group = AdditiveGroup(self.clone());
+        group.power(num, elem)
     }
 }
 
@@ -166,30 +155,34 @@ pub trait UnitaryRing: AbelianGroup + Monoid {
 /// not an Euclidean domain.
 pub trait IntegralDomain: UnitaryRing {
     /// Checks if the second element divides the first one and returns the
-    /// quotient if it exists. If both elements are zero, then zero is returned.
+    /// unique quotient if it exists. This method panics if the second element
+    /// is zero (because there would be no unique solution).
     fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem>;
 
-    /// Returns true if the first element is a multiple of the second one.
-    fn is_multiple_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.try_div(elem1, elem2).is_some()
-    }
-
-    /// Returns true if the first element is a divisor of the second one.
-    fn is_divisor_of(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.is_multiple_of(elem2, elem1)
+    /// Checks if the first element is a multiple of (or divisible by) the
+    /// second one.
+    fn divisible(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        if self.is_zero(elem2) {
+            self.is_zero(elem1)
+        } else {
+            self.try_div(elem1, elem2).is_some()
+        }
     }
 
     /// Returns true if the two elements are associates (divide each other)
     fn associates(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.is_multiple_of(elem1, elem2) && self.is_multiple_of(elem2, elem1)
+        self.divisible(elem1, elem2) && self.divisible(elem2, elem1)
     }
 
     /// We assume, that among all associates of the given elem there is a
-    /// well defined unique one (non-negative for integers, zero or monoic
-    /// for polynomials). This method returns that representative and the unit
-    /// element whose product with the given element is the representative.
-    /// If the element is zero, then zero and one is returned.
-    fn associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem);
+    /// well defined unique one (non-negative for integers, zero or monic
+    /// for polynomials). This method returns that representative element.
+    fn associate_repr(&self, elem: &Self::Elem) -> Self::Elem;
+
+    /// Returns the unique invertible element which is the quotient of the
+    /// associate representative and the given element. This method panics
+    /// if the element is zero.
+    fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem;
 }
 
 /// An Euclidean domain is an integral domain where the Euclidean algorithm
@@ -199,27 +192,30 @@ pub trait EuclideanDomain: IntegralDomain {
     /// Performs the euclidean division algorithm dividing the first elem
     /// with the second one and returning the quotient and the remainder.
     /// The remainder should be the one with the least norm among all possible
-    /// ones so that the Euclidean algorithm runs fast. The second element
-    /// may be zero, in which case the quotient shall be zero and the
-    /// remainder be the first element.
+    /// ones so that the Euclidean algorithm runs fast. This method panics
+    /// if the second element is zero (because there is no unique solution)
     fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem);
 
     /// Performs the division just like the [quo_rem](EuclideanDomain::quo_rem)
-    /// method would do and returns the quotient.
+    /// method would do and returns the quotient. This method panics if the
+    /// second element is zero.
     fn quo(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.quo_rem(elem1, elem2).0
     }
 
     /// Performs the division just like the [quo_rem](EuclideanDomain::quo_rem)
-    /// method would do and returns the remainder
+    /// method would do and returns the remainder. This method panics if the
+    /// second element is zero.
     fn rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.quo_rem(elem1, elem2).1
     }
 
-    /// Returns true if the quotient is zero, that is the first element
-    /// equals is own remainder when divided by the second one.
-    fn is_reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.is_zero(&self.quo(elem1, elem2))
+    /// Returns true if the second element is zero or the first element
+    /// has zero quotient by the second one. These are the representative
+    /// elements of the factor ring by the principal ideal generated by
+    /// the second element.
+    fn reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.is_zero(elem2) || self.is_zero(&self.quo(elem1, elem2))
     }
 
     /// Calculates the greatest common divisor of two elements using the
@@ -238,7 +234,11 @@ pub trait EuclideanDomain: IntegralDomain {
     /// Calculates the lest common divisor of the two elements.
     fn lcm(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         let gcd = self.gcd(elem1, elem2);
-        self.mul(&self.quo(elem1, &gcd), elem2)
+        if self.is_zero(&gcd) {
+            gcd
+        } else {
+            self.mul(&self.quo(elem1, &gcd), elem2)
+        }
     }
 
     /// Performs the extended Euclidean algorithm which returns the greatest
@@ -266,6 +266,7 @@ pub trait EuclideanDomain: IntegralDomain {
     }
 
     #[doc(hidden)]
+    /// Default implementation of the integral domain `try_div` method.
     fn auto_try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
         let (quo, rem) = self.quo_rem(elem1, elem2);
         if self.is_zero(&rem) {
@@ -292,24 +293,37 @@ pub trait Field: EuclideanDomain {
         self.mul(elem1, &self.inv(elem2))
     }
 
-    #[doc(hidden)]
-    /// Default implementation of the Euclidean domain `quo_rem` operation.
-    fn auto_quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        if self.is_zero(elem2) {
-            (self.zero(), elem1.clone())
+    /// Returns an integer power of the given element.
+    fn power(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+        if self.is_zero(elem) {
+            self.zero()
         } else {
-            (self.div(elem1, elem2), self.zero())
+            let group = MultiplicativeGroup(self.clone());
+            group.power(num, elem)
         }
     }
 
     #[doc(hidden)]
-    /// Default implementation of the integral domain `associate_repr` operation.
-    fn auto_associate_repr(&self, elem: &Self::Elem) -> (Self::Elem, Self::Elem) {
+    /// Default implementation of the Euclidean domain `quo_rem` method.
+    fn auto_quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
+        assert!(!self.is_zero(elem2));
+        (self.div(elem1, elem2), self.zero())
+    }
+
+    #[doc(hidden)]
+    /// Default implementation of the integral domain `associate_repr` method.
+    fn auto_associate_repr(&self, elem: &Self::Elem) -> Self::Elem {
         if self.is_zero(elem) {
-            (self.zero(), self.one())
+            self.zero()
         } else {
-            (self.one(), self.div(&self.one(), elem))
+            self.one()
         }
+    }
+
+    #[doc(hidden)]
+    /// Default implementation of the integral domain `associate_coef` method.
+    fn auto_associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
+        self.inv(elem)
     }
 }
 

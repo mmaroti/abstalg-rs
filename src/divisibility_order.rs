@@ -29,8 +29,7 @@ impl<R: IntegralDomain> Domain for DivisibilityOrder<R> {
     type Elem = R::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        let m = self.base.associate_repr(elem).1;
-        self.base.is_one(&m)
+        self.base.is_zero(elem) || self.base.is_one(&self.base.associate_coef(elem))
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
@@ -40,7 +39,7 @@ impl<R: IntegralDomain> Domain for DivisibilityOrder<R> {
 
 impl<R: IntegralDomain> PartialOrder for DivisibilityOrder<R> {
     fn less_or_equal(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.base.is_multiple_of(elem2, elem1)
+        self.base.divisible(elem2, elem1)
     }
 }
 
@@ -57,12 +56,12 @@ impl<R: IntegralDomain> BoundedOrder for DivisibilityOrder<R> {
 impl<R: EuclideanDomain> Lattice for DivisibilityOrder<R> {
     fn meet(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         let elem = self.base.gcd(elem1, elem2);
-        self.base.associate_repr(&elem).0
+        self.base.associate_repr(&elem)
     }
 
     fn join(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         let elem = self.base.lcm(elem1, elem2);
-        self.base.associate_repr(&elem).0
+        self.base.associate_repr(&elem)
     }
 }
 

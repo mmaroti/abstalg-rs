@@ -6,7 +6,7 @@ use crate::*;
 /// The multiplicative group of a unitary ring or field, or more generally the group of invertible
 /// elements of any monoid.
 #[derive(Clone, Debug, Default)]
-pub struct MultiplicativeGroup<A>(A)
+pub struct MultiplicativeGroup<A>(pub A)
 where
     A: Monoid;
 
