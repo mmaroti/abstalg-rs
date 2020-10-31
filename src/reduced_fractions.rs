@@ -5,16 +5,19 @@ use crate::*;
 use num::rational::Ratio;
 
 /// The field of rational numbers with arbitrary large values.
-pub const QQ: ReducedFractions<Integers> = ReducedFractions(Integers());
+pub const QQ: ReducedFractions<Integers> = ReducedFractions { base: Integers() };
 
 /// The field of fractions over the elements of an Euclidean domain. The
 /// elements are ratios where the numerator and denominator are relative
 /// primes and the denominator is normalized with respect to its associate
 /// class.
 #[derive(Clone, Debug)]
-pub struct ReducedFractions<A>(pub A)
+pub struct ReducedFractions<A>
 where
-    A: EuclideanDomain;
+    A: EuclideanDomain,
+{
+    base: A,
+}
 
 impl<A> ReducedFractions<A>
 where
@@ -24,23 +27,23 @@ where
     /// be trivial, that is one must be different from zero.
     pub fn new(base: A) -> Self {
         assert!(!base.is_zero(&base.one()));
-        Self(base)
+        Self { base }
     }
 
     /// Returns the base ring from which this field was created.
     pub fn base(&self) -> &A {
-        &self.0
+        &self.base
     }
 
     /// Takes an arbitrary ratio of elements and turns it into its normal form.
     pub fn reduce(&self, elem: &Ratio<A::Elem>) -> Ratio<A::Elem> {
-        assert!(!self.0.is_zero(elem.denom()));
-        let gcd = self.0.gcd(elem.numer(), elem.denom());
-        let numer = self.0.quo(elem.numer(), &gcd);
-        let denom = self.0.quo(elem.denom(), &gcd);
-        let coef = self.0.associate_coef(&denom);
-        let (numer, denom) = if !self.0.is_one(&coef) {
-            (self.0.mul(&numer, &coef), self.0.mul(&denom, &coef))
+        assert!(!self.base.is_zero(elem.denom()));
+        let gcd = self.base.gcd(elem.numer(), elem.denom());
+        let numer = self.base.quo(elem.numer(), &gcd);
+        let denom = self.base.quo(elem.denom(), &gcd);
+        let coef = self.base.associate_coef(&denom);
+        let (numer, denom) = if !self.base.is_one(&coef) {
+            (self.base.mul(&numer, &coef), self.base.mul(&denom, &coef))
         } else {
             (numer, denom)
         };
@@ -55,12 +58,13 @@ where
     type Elem = Ratio<A::Elem>;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.0.relative_primes(elem.numer(), elem.denom())
-            && self.0.is_one(&self.0.associate_coef(elem.denom()))
+        self.base.relative_primes(elem.numer(), elem.denom())
+            && self.base.is_one(&self.base.associate_coef(elem.denom()))
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.0.equals(elem1.numer(), elem2.numer()) && self.0.equals(elem1.denom(), elem2.denom())
+        self.base.equals(elem1.numer(), elem2.numer())
+            && self.base.equals(elem1.denom(), elem2.denom())
     }
 }
 
@@ -70,8 +74,8 @@ where
 {
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         let elem = Self::Elem::new_raw(
-            self.0.mul(elem1.numer(), elem2.numer()),
-            self.0.mul(elem1.denom(), elem2.denom()),
+            self.base.mul(elem1.numer(), elem2.numer()),
+            self.base.mul(elem1.denom(), elem2.denom()),
         );
         self.reduce(&elem)
     }
@@ -82,11 +86,11 @@ where
     A: EuclideanDomain,
 {
     fn one(&self) -> Self::Elem {
-        Self::Elem::new_raw(self.0.one(), self.0.one())
+        Self::Elem::new_raw(self.base.one(), self.base.one())
     }
 
     fn is_one(&self, elem: &Self::Elem) -> bool {
-        self.0.is_one(elem.numer()) && self.0.is_one(elem.denom())
+        self.base.is_one(elem.numer()) && self.base.is_one(elem.denom())
     }
 
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
@@ -99,7 +103,7 @@ where
     }
 
     fn invertible(&self, elem: &Self::Elem) -> bool {
-        !self.0.is_zero(elem.numer())
+        !self.base.is_zero(elem.numer())
     }
 }
 
@@ -108,33 +112,33 @@ where
     A: EuclideanDomain,
 {
     fn zero(&self) -> Self::Elem {
-        Self::Elem::new_raw(self.0.zero(), self.0.one())
+        Self::Elem::new_raw(self.base.zero(), self.base.one())
     }
 
     fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        Self::Elem::new_raw(self.0.neg(elem.numer()), elem.denom().clone())
+        Self::Elem::new_raw(self.base.neg(elem.numer()), elem.denom().clone())
     }
 
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let elem = if self.0.equals(elem1.denom(), elem2.denom()) {
+        let elem = if self.base.equals(elem1.denom(), elem2.denom()) {
             Self::Elem::new_raw(
-                self.0.add(elem1.numer(), elem2.numer()),
+                self.base.add(elem1.numer(), elem2.numer()),
                 elem1.denom().clone(),
             )
         } else {
             Self::Elem::new_raw(
-                self.0.add(
-                    &self.0.mul(elem1.numer(), elem2.denom()),
-                    &self.0.mul(elem1.denom(), elem2.numer()),
+                self.base.add(
+                    &self.base.mul(elem1.numer(), elem2.denom()),
+                    &self.base.mul(elem1.denom(), elem2.numer()),
                 ),
-                self.0.mul(elem1.denom(), elem2.denom()),
+                self.base.mul(elem1.denom(), elem2.denom()),
             )
         };
         self.reduce(&elem)
     }
 
     fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
-        let elem = Self::Elem::new_raw(self.0.times(num, elem.numer()), elem.denom().clone());
+        let elem = Self::Elem::new_raw(self.base.times(num, elem.numer()), elem.denom().clone());
         self.reduce(&elem)
     }
 }
@@ -172,12 +176,12 @@ where
     A: EuclideanDomain,
 {
     fn inv(&self, elem: &Self::Elem) -> Self::Elem {
-        assert!(!self.0.is_zero(elem.numer()));
+        assert!(!self.base.is_zero(elem.numer()));
         let numer = elem.denom();
         let denom = elem.numer();
-        let coef = self.0.associate_coef(&denom);
-        let (numer, denom) = if !self.0.is_one(&coef) {
-            (self.0.mul(&numer, &coef), self.0.mul(&denom, &coef))
+        let coef = self.base.associate_coef(&denom);
+        let (numer, denom) = if !self.base.is_one(&coef) {
+            (self.base.mul(&numer, &coef), self.base.mul(&denom, &coef))
         } else {
             (numer.clone(), denom.clone())
         };
@@ -191,7 +195,7 @@ mod tests {
 
     #[test]
     fn ops() {
-        let field = ReducedFractions(I32);
+        let field = ReducedFractions::new(I32);
         for numer in -20..20 {
             for denom in -20..20 {
                 if denom == 0 {

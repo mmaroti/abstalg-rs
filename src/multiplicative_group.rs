@@ -6,17 +6,25 @@ use crate::*;
 /// The multiplicative group of a unitary ring or field, or more generally the group of invertible
 /// elements of any monoid.
 #[derive(Clone, Debug)]
-pub struct MultiplicativeGroup<A>(pub A)
+pub struct MultiplicativeGroup<A>
 where
-    A: Monoid;
+    A: Monoid,
+{
+    base: A,
+}
 
 impl<A> MultiplicativeGroup<A>
 where
     A: Monoid,
 {
+    /// Creates a new multiplicative group from the given base.
+    pub fn new(base: A) -> Self {
+        Self { base }
+    }
+
     /// Returns the base monoid from which this group was created.
     pub fn base(&self) -> &A {
-        &self.0
+        &self.base
     }
 }
 
@@ -27,11 +35,11 @@ where
     type Elem = A::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.0.invertible(elem)
+        self.base.invertible(elem)
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.0.equals(elem1, elem2)
+        self.base.equals(elem1, elem2)
     }
 }
 
@@ -40,15 +48,15 @@ where
     A: Monoid,
 {
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        self.0.mul(elem1, elem2)
+        self.base.mul(elem1, elem2)
     }
 
     fn mul_assign(&self, elem1: &mut Self::Elem, elem2: &Self::Elem) {
-        self.0.mul_assign(elem1, elem2)
+        self.base.mul_assign(elem1, elem2)
     }
 
     fn square(&self, elem: &mut Self::Elem) {
-        self.0.square(elem)
+        self.base.square(elem)
     }
 }
 
@@ -57,15 +65,15 @@ where
     A: Monoid,
 {
     fn one(&self) -> Self::Elem {
-        self.0.one()
+        self.base.one()
     }
 
     fn is_one(&self, elem: &Self::Elem) -> bool {
-        self.0.is_one(elem)
+        self.base.is_one(elem)
     }
 
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
-        self.0.try_inv(elem)
+        self.base.try_inv(elem)
     }
 
     fn invertible(&self, _elem: &Self::Elem) -> bool {
@@ -78,6 +86,6 @@ where
     A: Monoid,
 {
     fn inv(&self, elem: &Self::Elem) -> Self::Elem {
-        self.0.try_inv(elem).unwrap()
+        self.base.try_inv(elem).unwrap()
     }
 }

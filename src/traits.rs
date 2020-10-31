@@ -134,7 +134,7 @@ pub trait AbelianGroup: Domain {
 
     /// Returns an integer multiple of the given element.
     fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
-        let group = AdditiveGroup(self.clone());
+        let group = AdditiveGroup::new(self.clone());
         group.power(num, elem)
     }
 }
@@ -298,7 +298,7 @@ pub trait Field: EuclideanDomain {
         if self.is_zero(elem) {
             self.zero()
         } else {
-            let group = MultiplicativeGroup(self.clone());
+            let group = MultiplicativeGroup::new(self.clone());
             group.power(num, elem)
         }
     }

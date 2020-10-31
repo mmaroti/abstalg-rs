@@ -10,17 +10,25 @@ use crate::*;
 /// can be defined over any abelian group, though only the group operations
 /// will be available.
 #[derive(Clone, Debug)]
-pub struct PolynomialAlgebra<A>(pub A)
+pub struct PolynomialAlgebra<A>
 where
-    A: AbelianGroup;
+    A: AbelianGroup,
+{
+    base: A,
+}
 
 impl<A> PolynomialAlgebra<A>
 where
     A: AbelianGroup,
 {
+    /// Creates a new polynomial algebra from the given base.
+    pub fn new(base: A) -> Self {
+        Self { base }
+    }
+
     /// Returns the base ring from which this ring was created.
     pub fn base(&self) -> &A {
-        &self.0
+        &self.base
     }
 
     /// Returns the degree of the given polynomial. The zero polynomial has
@@ -57,11 +65,11 @@ where
             true
         } else {
             for a in elem.iter() {
-                if !self.0.contains(a) {
+                if !self.base.contains(a) {
                     return false;
                 }
             }
-            !self.0.is_zero(&elem[elem.len() - 1])
+            !self.base.is_zero(&elem[elem.len() - 1])
         }
     }
 
@@ -72,7 +80,7 @@ where
             elem1
                 .iter()
                 .zip(elem2.iter())
-                .all(|(x, y)| self.0.equals(x, y))
+                .all(|(x, y)| self.base.equals(x, y))
         }
     }
 }
@@ -86,11 +94,11 @@ where
             Vec::new()
         } else {
             let mut elem3 = Vec::with_capacity(elem1.len() + elem2.len() - 1);
-            elem3.resize(elem1.len() + elem2.len() - 1, self.0.zero());
+            elem3.resize(elem1.len() + elem2.len() - 1, self.base.zero());
             for i in 0..elem1.len() {
                 for j in 0..elem2.len() {
-                    let a = self.0.mul(&elem1[i], &elem2[j]);
-                    elem3[i + j] = self.0.add(&elem3[i + j], &a);
+                    let a = self.base.mul(&elem1[i], &elem2[j]);
+                    elem3[i + j] = self.base.add(&elem3[i + j], &a);
                 }
             }
             elem3
@@ -103,17 +111,17 @@ where
     A: AbelianGroup + Monoid,
 {
     fn one(&self) -> Self::Elem {
-        assert!(!self.0.is_zero(&self.0.one()));
-        vec![self.0.one()]
+        assert!(!self.base.is_zero(&self.base.one()));
+        vec![self.base.one()]
     }
 
     fn is_one(&self, elem: &Self::Elem) -> bool {
-        elem.len() == 1 && self.0.is_one(&elem[0])
+        elem.len() == 1 && self.base.is_one(&elem[0])
     }
 
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         if elem.len() == 1 {
-            if let Some(elem) = self.0.try_inv(&elem[0]) {
+            if let Some(elem) = self.base.try_inv(&elem[0]) {
                 return Some(vec![elem]);
             }
         }
@@ -134,7 +142,7 @@ where
     }
 
     fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        elem.iter().map(|a| self.0.neg(a)).collect()
+        elem.iter().map(|a| self.base.neg(a)).collect()
     }
 
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
@@ -146,15 +154,15 @@ where
             };
             let mut elem3 = elem1.clone();
             for i in 0..elem2.len() {
-                elem3[i] = self.0.add(&elem3[i], &elem2[i]);
+                elem3[i] = self.base.add(&elem3[i], &elem2[i]);
             }
             elem3
         } else {
             let mut elem3 = Vec::new();
             for i in 0..elem1.len() {
-                let a = self.0.add(&elem1[i], &elem2[i]);
-                if !self.0.is_zero(&a) {
-                    elem3.resize(i + 1, self.0.zero());
+                let a = self.base.add(&elem1[i], &elem2[i]);
+                if !self.base.is_zero(&a) {
+                    elem3.resize(i + 1, self.base.zero());
                     elem3[i] = a;
                 }
             }
@@ -163,10 +171,10 @@ where
     }
 
     fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
-        let mut elem: Self::Elem = elem.iter().map(|a| self.0.times(num, a)).collect();
+        let mut elem: Self::Elem = elem.iter().map(|a| self.base.times(num, a)).collect();
         for i in (0..elem.len()).rev() {
-            if !self.0.is_zero(&elem[i]) {
-                elem.resize(i + 1, self.0.zero());
+            if !self.base.is_zero(&elem[i]) {
+                elem.resize(i + 1, self.base.zero());
                 return elem;
             }
         }
@@ -190,23 +198,23 @@ where
             }
         } else {
             let mut quo = Vec::with_capacity(elem1.len() + elem2.len() - 1);
-            quo.resize(elem1.len() - elem2.len() + 1, self.0.zero());
+            quo.resize(elem1.len() - elem2.len() + 1, self.base.zero());
             let mut rem = elem1.clone();
 
             let a = &elem2[elem2.len() - 1];
-            assert!(!self.0.is_zero(a));
+            assert!(!self.base.is_zero(a));
 
             for i in (0..quo.len()).rev() {
-                quo[i] = self.0.try_div(&rem[i + elem2.len() - 1], a)?;
-                let b = self.0.neg(&quo[i]);
+                quo[i] = self.base.try_div(&rem[i + elem2.len() - 1], a)?;
+                let b = self.base.neg(&quo[i]);
                 for j in 0..(elem2.len() - 1) {
-                    let c = self.0.mul(&elem2[j], &b);
-                    self.0.add_assign(&mut rem[i + j], &c);
+                    let c = self.base.mul(&elem2[j], &b);
+                    self.base.add_assign(&mut rem[i + j], &c);
                 }
             }
 
             for d in rem.iter().take(elem2.len() - 1) {
-                if !self.0.is_zero(d) {
+                if !self.base.is_zero(d) {
                     return None;
                 }
             }
@@ -218,15 +226,15 @@ where
         if elem.is_empty() {
             self.zero()
         } else {
-            let coef = self.0.associate_coef(&elem[elem.len() - 1]);
-            elem.iter().map(|x| self.0.mul(x, &coef)).collect()
+            let coef = self.base.associate_coef(&elem[elem.len() - 1]);
+            elem.iter().map(|x| self.base.mul(x, &coef)).collect()
         }
     }
 
     fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
         assert!(!elem.is_empty());
         let elem = &elem[elem.len() - 1];
-        let elem = self.0.associate_coef(elem);
+        let elem = self.base.associate_coef(elem);
         vec![elem]
     }
 }
@@ -242,23 +250,23 @@ where
         }
 
         let mut quo = Vec::with_capacity(elem1.len() - elem2.len() + 1);
-        quo.resize(elem1.len() - elem2.len() + 1, self.0.zero());
+        quo.resize(elem1.len() - elem2.len() + 1, self.base.zero());
         let mut rem = elem1.clone();
 
         let a = &elem2[elem2.len() - 1];
-        assert!(!self.0.is_zero(a));
+        assert!(!self.base.is_zero(a));
 
         for i in (0..quo.len()).rev() {
-            quo[i] = self.0.div(&rem[i + elem2.len() - 1], a);
-            let b = self.0.neg(&quo[i]);
+            quo[i] = self.base.div(&rem[i + elem2.len() - 1], a);
+            let b = self.base.neg(&quo[i]);
             for j in 0..(elem2.len() - 1) {
-                let c = self.0.mul(&elem2[j], &b);
-                rem[i + j] = self.0.add(&rem[i + j], &c);
+                let c = self.base.mul(&elem2[j], &b);
+                rem[i + j] = self.base.add(&rem[i + j], &c);
             }
         }
 
         let mut i = elem2.len() - 1;
-        while i > 0 && self.0.is_zero(&rem[i - 1]) {
+        while i > 0 && self.base.is_zero(&rem[i - 1]) {
             i -= 1;
         }
         rem.truncate(i);
@@ -274,13 +282,13 @@ mod tests {
     #[test]
     fn field_256() {
         let field1 = QuotientField::new(I32, 2);
-        let ring2 = PolynomialAlgebra(field1);
+        let ring = PolynomialAlgebra::new(field1);
 
         // the irreducible polynomial 1 + x + x^3 + x^4 + x^8
         let poly = vec![1, 1, 0, 1, 1, 0, 0, 0, 1];
-        assert!(ring2.contains(&poly));
-        assert_eq!(ring2.degree(&poly), Some(8));
-        let field2 = QuotientField::new(ring2, poly);
+        assert!(ring.contains(&poly));
+        assert_eq!(ring.degree(&poly), Some(8));
+        let field2 = QuotientField::new(ring, poly);
 
         // 1 + x, primitive element, generate all 256 elements
         let gen = vec![1, 1];

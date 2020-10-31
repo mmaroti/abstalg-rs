@@ -9,14 +9,22 @@ use crate::*;
 /// bounded distributive lattice where the meet is the greatest common divisor,
 /// the join is the least common multiple.
 #[derive(Clone, Debug)]
-pub struct DivisibilityOrder<A>(pub A)
+pub struct DivisibilityOrder<A>
 where
-    A: IntegralDomain;
+    A: IntegralDomain,
+{
+    base: A,
+}
 
 impl<A: IntegralDomain> DivisibilityOrder<A> {
+    /// Creates a new divisibility order from the given base.
+    pub fn new(base: A) -> Self {
+        Self { base }
+    }
+
     /// Returns the base ring from which this lattice was constructed.
     pub fn base(&self) -> &A {
-        &self.0
+        &self.base
     }
 }
 
@@ -24,39 +32,39 @@ impl<A: IntegralDomain> Domain for DivisibilityOrder<A> {
     type Elem = A::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.0.is_zero(elem) || self.0.is_one(&self.0.associate_coef(elem))
+        self.base.is_zero(elem) || self.base.is_one(&self.base.associate_coef(elem))
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.0.equals(elem1, elem2)
+        self.base.equals(elem1, elem2)
     }
 }
 
 impl<A: IntegralDomain> PartialOrder for DivisibilityOrder<A> {
     fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        self.0.divisible(elem2, elem1)
+        self.base.divisible(elem2, elem1)
     }
 }
 
 impl<A: IntegralDomain> BoundedOrder for DivisibilityOrder<A> {
     fn max(&self) -> Self::Elem {
-        self.0.zero()
+        self.base.zero()
     }
 
     fn min(&self) -> Self::Elem {
-        self.0.one()
+        self.base.one()
     }
 }
 
 impl<A: EuclideanDomain> Lattice for DivisibilityOrder<A> {
     fn meet(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let elem = self.0.gcd(elem1, elem2);
-        self.0.associate_repr(&elem)
+        let elem = self.base.gcd(elem1, elem2);
+        self.base.associate_repr(&elem)
     }
 
     fn join(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let elem = self.0.lcm(elem1, elem2);
-        self.0.associate_repr(&elem)
+        let elem = self.base.lcm(elem1, elem2);
+        self.base.associate_repr(&elem)
     }
 }
 
@@ -68,7 +76,7 @@ mod tests {
 
     #[test]
     fn order() {
-        let lat = DivisibilityOrder(I32);
+        let lat = DivisibilityOrder::new(I32);
 
         for a in -50..50 {
             if a < 0 {

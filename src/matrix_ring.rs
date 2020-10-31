@@ -6,38 +6,47 @@ use crate::*;
 /// The ring of rectangular matrices of a fixed size over a field.
 /// The elements are plain vectors of entries.
 #[derive(Clone, Debug)]
-pub struct MatrixRing<A>(pub A, pub usize)
+pub struct MatrixRing<A>
 where
-    A: Field;
+    A: Field,
+{
+    base: A,
+    size: usize,
+}
 
 impl<A> MatrixRing<A>
 where
     A: Field,
 {
+    /// Creates a new matrix ring for the given base and size.
+    pub fn new(base: A, size: usize) -> Self {
+        Self { base, size }
+    }
+
     /// Returns the base algebra from which this vector algebra was created.
     pub fn base(&self) -> &A {
-        &self.0
+        &self.base
     }
 
     /// Returns the common number of columns and rows of the elements of this
     /// algebra.
     pub fn size(&self) -> usize {
-        self.1
+        self.size
     }
 
     /// Returns the number of elements in the matrix, which is the square of
     /// the size.
     pub fn len(&self) -> usize {
-        self.size() * self.size()
+        self.size * self.size
     }
 
     /// Returns the transpose of the given matrix.
     pub fn transpose(&self, elem: &Vec<A::Elem>) -> Vec<A::Elem> {
         assert!(elem.len() == self.len());
         let mut res = Vec::with_capacity(self.len());
-        for row in 0..self.size() {
-            for col in 0..self.size() {
-                res.push(elem[col * self.size() + row].clone())
+        for row in 0..self.size {
+            for col in 0..self.size {
+                res.push(elem[col * self.size + row].clone())
             }
         }
         res
@@ -54,7 +63,7 @@ where
         if elem.len() != self.len() {
             false
         } else {
-            elem.iter().all(|a| self.base().contains(&a))
+            elem.iter().all(|a| self.base.contains(&a))
         }
     }
 
@@ -63,7 +72,7 @@ where
         elem1
             .iter()
             .zip(elem2.iter())
-            .all(|(x, y)| self.base().equals(x, y))
+            .all(|(x, y)| self.base.equals(x, y))
     }
 }
 
@@ -75,14 +84,13 @@ where
         assert!(elem1.len() == self.len());
         let elem2 = self.transpose(elem2);
         let mut res = Vec::with_capacity(self.len());
-        for row in 0..self.size() {
-            for col in 0..self.size() {
-                let mut sum = self.base().zero();
-                for tmp in 0..self.size() {
-                    let val1 = &elem1[row * self.size() + tmp];
-                    let val2 = &elem2[col * self.size() + tmp];
-                    self.base()
-                        .add_assign(&mut sum, &self.base().mul(val1, val2));
+        for row in 0..self.size {
+            for col in 0..self.size {
+                let mut sum = self.base.zero();
+                for tmp in 0..self.size {
+                    let val1 = &elem1[row * self.size + tmp];
+                    let val2 = &elem2[col * self.size + tmp];
+                    self.base.add_assign(&mut sum, &self.base.mul(val1, val2));
                 }
                 res.push(sum)
             }
@@ -96,39 +104,39 @@ where
     A: Field,
 {
     fn zero(&self) -> Self::Elem {
-        VectorAlgebra(self.base().clone(), self.len()).zero()
+        VectorAlgebra::new(self.base.clone(), self.len()).zero()
     }
 
     fn is_zero(&self, elem: &Self::Elem) -> bool {
-        VectorAlgebra(self.base().clone(), self.len()).is_zero(elem)
+        VectorAlgebra::new(self.base.clone(), self.len()).is_zero(elem)
     }
 
     fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        VectorAlgebra(self.base().clone(), self.len()).neg(elem)
+        VectorAlgebra::new(self.base.clone(), self.len()).neg(elem)
     }
 
     fn neg_assign(&self, elem: &mut Self::Elem) {
-        VectorAlgebra(self.base().clone(), self.len()).neg_assign(elem)
+        VectorAlgebra::new(self.base.clone(), self.len()).neg_assign(elem)
     }
 
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        VectorAlgebra(self.base().clone(), self.len()).add(elem1, elem2)
+        VectorAlgebra::new(self.base.clone(), self.len()).add(elem1, elem2)
     }
 
     fn add_assign(&self, elem1: &mut Self::Elem, elem2: &Self::Elem) {
-        VectorAlgebra(self.base().clone(), self.len()).add_assign(elem1, elem2);
+        VectorAlgebra::new(self.base.clone(), self.len()).add_assign(elem1, elem2);
     }
 
     fn double(&self, elem: &mut Self::Elem) {
-        VectorAlgebra(self.base().clone(), self.len()).double(elem);
+        VectorAlgebra::new(self.base.clone(), self.len()).double(elem);
     }
 
     fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        VectorAlgebra(self.base().clone(), self.len()).sub(elem1, elem2)
+        VectorAlgebra::new(self.base.clone(), self.len()).sub(elem1, elem2)
     }
 
     fn sub_assign(&self, elem1: &mut Self::Elem, elem2: &Self::Elem) {
-        VectorAlgebra(self.base().clone(), self.len()).sub_assign(elem1, elem2);
+        VectorAlgebra::new(self.base.clone(), self.len()).sub_assign(elem1, elem2);
     }
 }
 
@@ -137,8 +145,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn field_matmul() {
-        let ring = MatrixRing(QQ, 2);
+    fn matrix_mul() {
+        let ring = MatrixRing::new(QQ, 2);
 
         let elem1 = vec![QQ.int(1), QQ.int(2), QQ.int(3), QQ.int(4)];
         let elem2 = vec![QQ.int(5), QQ.int(6), QQ.int(7), QQ.int(8)];
