@@ -10,22 +10,24 @@ pub struct MatrixRing<A>
 where
     A: Field,
 {
-    base: A,
+    valg: VectorAlgebra<A>,
     size: usize,
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl<A> MatrixRing<A>
 where
     A: Field,
 {
     /// Creates a new matrix ring for the given base and size.
     pub fn new(base: A, size: usize) -> Self {
-        Self { base, size }
+        let valg = VectorAlgebra::new(base, size.checked_mul(size).unwrap());
+        Self { valg, size }
     }
 
     /// Returns the base algebra from which this vector algebra was created.
     pub fn base(&self) -> &A {
-        &self.base
+        self.valg.base()
     }
 
     /// Returns the common number of columns and rows of the elements of this
@@ -41,6 +43,7 @@ where
     }
 
     /// Returns the transpose of the given matrix.
+    #[allow(clippy::ptr_arg)]
     pub fn transpose(&self, elem: &Vec<A::Elem>) -> Vec<A::Elem> {
         assert!(elem.len() == self.len());
         let mut res = Vec::with_capacity(self.len());
@@ -63,7 +66,7 @@ where
         if elem.len() != self.len() {
             false
         } else {
-            elem.iter().all(|a| self.base.contains(&a))
+            elem.iter().all(|a| self.base().contains(&a))
         }
     }
 
@@ -72,7 +75,7 @@ where
         elem1
             .iter()
             .zip(elem2.iter())
-            .all(|(x, y)| self.base.equals(x, y))
+            .all(|(x, y)| self.base().equals(x, y))
     }
 }
 
@@ -86,11 +89,12 @@ where
         let mut res = Vec::with_capacity(self.len());
         for row in 0..self.size {
             for col in 0..self.size {
-                let mut sum = self.base.zero();
+                let mut sum = self.base().zero();
                 for tmp in 0..self.size {
                     let val1 = &elem1[row * self.size + tmp];
                     let val2 = &elem2[col * self.size + tmp];
-                    self.base.add_assign(&mut sum, &self.base.mul(val1, val2));
+                    self.base()
+                        .add_assign(&mut sum, &self.base().mul(val1, val2));
                 }
                 res.push(sum)
             }
@@ -99,44 +103,72 @@ where
     }
 }
 
+impl<A> Monoid for MatrixRing<A>
+where
+    A: Field,
+{
+    fn one(&self) -> Self::Elem {
+        self.int(1)
+    }
+
+    // TODO: properly implement matrix inverses
+    fn try_inv(&self, _elem: &Self::Elem) -> Option<Self::Elem> {
+        None
+    }
+}
+
 impl<A> AbelianGroup for MatrixRing<A>
 where
     A: Field,
 {
     fn zero(&self) -> Self::Elem {
-        VectorAlgebra::new(self.base.clone(), self.len()).zero()
+        self.valg.zero()
     }
 
     fn is_zero(&self, elem: &Self::Elem) -> bool {
-        VectorAlgebra::new(self.base.clone(), self.len()).is_zero(elem)
+        self.valg.is_zero(elem)
     }
 
     fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        VectorAlgebra::new(self.base.clone(), self.len()).neg(elem)
+        self.valg.neg(elem)
     }
 
     fn neg_assign(&self, elem: &mut Self::Elem) {
-        VectorAlgebra::new(self.base.clone(), self.len()).neg_assign(elem)
+        self.valg.neg_assign(elem)
     }
 
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        VectorAlgebra::new(self.base.clone(), self.len()).add(elem1, elem2)
+        self.valg.add(elem1, elem2)
     }
 
     fn add_assign(&self, elem1: &mut Self::Elem, elem2: &Self::Elem) {
-        VectorAlgebra::new(self.base.clone(), self.len()).add_assign(elem1, elem2);
+        self.valg.add_assign(elem1, elem2);
     }
 
     fn double(&self, elem: &mut Self::Elem) {
-        VectorAlgebra::new(self.base.clone(), self.len()).double(elem);
+        self.valg.double(elem);
     }
 
     fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        VectorAlgebra::new(self.base.clone(), self.len()).sub(elem1, elem2)
+        self.valg.sub(elem1, elem2)
     }
 
     fn sub_assign(&self, elem1: &mut Self::Elem, elem2: &Self::Elem) {
-        VectorAlgebra::new(self.base.clone(), self.len()).sub_assign(elem1, elem2);
+        self.valg.sub_assign(elem1, elem2);
+    }
+}
+
+impl<A> UnitaryRing for MatrixRing<A>
+where
+    A: Field,
+{
+    fn int(&self, elem: isize) -> Self::Elem {
+        let elem = self.base().int(elem);
+        let mut mat = self.zero();
+        for i in 0..self.size {
+            mat[i * (self.size + 1)] = elem.clone();
+        }
+        mat
     }
 }
 
@@ -152,5 +184,8 @@ mod tests {
         let elem2 = vec![QQ.int(5), QQ.int(6), QQ.int(7), QQ.int(8)];
         let elem3 = ring.mul(&elem1, &elem2);
         assert_eq!(elem3, vec![QQ.int(19), QQ.int(22), QQ.int(43), QQ.int(50)]);
+
+        assert_eq!(ring.mul(&elem1, &ring.one()), elem1);
+        assert_eq!(ring.mul(&ring.one(), &elem1), elem1);
     }
 }

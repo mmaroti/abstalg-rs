@@ -14,6 +14,7 @@ where
     len: usize,
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl<A> VectorAlgebra<A>
 where
     A: Domain,
