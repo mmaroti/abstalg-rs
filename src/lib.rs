@@ -39,3 +39,6 @@ pub use vector_algebra::*;
 
 mod matrix_ring;
 pub use matrix_ring::*;
+
+mod two_element_algebra;
+pub use two_element_algebra::*;

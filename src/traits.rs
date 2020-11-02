@@ -191,9 +191,8 @@ pub trait IntegralDomain: UnitaryRing {
 pub trait EuclideanDomain: IntegralDomain {
     /// Performs the euclidean division algorithm dividing the first elem
     /// with the second one and returning the quotient and the remainder.
-    /// The remainder should be the one with the least norm among all possible
-    /// ones so that the Euclidean algorithm runs fast. This method panics
-    /// if the second element is zero (because there is no unique solution)
+    /// This method panics if the second element is zero (because there is
+    /// no unique solution)
     fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem);
 
     /// Performs the division just like the [quo_rem](EuclideanDomain::quo_rem)
@@ -348,6 +347,16 @@ pub trait PartialOrder: Domain {
     }
 }
 
+/// A partial order that has a largest and smallest element. Typical
+/// examples are bounded lattices.
+pub trait BoundedOrder: PartialOrder {
+    /// Returns the largest element of the lattice.
+    fn max(&self) -> Self::Elem;
+
+    /// Returns the smallest element of the lattice.
+    fn min(&self) -> Self::Elem;
+}
+
 /// A set where the join and meet of elements can be calculated. Typical
 /// examples are the total orders of integers or the divisibility relation
 /// on the associate classes of an Euclidean domain.
@@ -361,15 +370,12 @@ pub trait Lattice: PartialOrder {
     fn join(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
 }
 
-/// A partial order that has a largest and smallest element. Typical
-/// examples are bounded lattices.
-pub trait BoundedOrder: PartialOrder {
-    /// Returns the largest element of the lattice.
-    fn max(&self) -> Self::Elem;
-
-    /// Returns the smallest element of the lattice.
-    fn min(&self) -> Self::Elem;
-}
-
 /// A lattice that is distributive. No new methods are added.
 pub trait DistributiveLattice: Lattice {}
+
+/// A Boolean algebra, which is a complemented bounded distributive lattice.
+/// Typical examples are the two-element boolean algebra and the power sets.
+pub trait BooleanAlgebra: DistributiveLattice + BoundedOrder {
+    /// Returns the complement (logical negation) of the given element.
+    fn not(&self, elem: &Self::Elem) -> Self::Elem;
+}
