@@ -218,6 +218,19 @@ where
     }
 }
 
+impl<A> BoundedOrder for VectorAlgebra<A>
+where
+    A: BoundedOrder,
+{
+    fn max(&self) -> Self::Elem {
+        self.diagonal(self.base.max())
+    }
+
+    fn min(&self) -> Self::Elem {
+        self.diagonal(self.base.min())
+    }
+}
+
 impl<A> Lattice for VectorAlgebra<A>
 where
     A: Lattice,
@@ -241,17 +254,14 @@ where
     }
 }
 
-impl<A> BoundedOrder for VectorAlgebra<A>
-where
-    A: BoundedOrder,
-{
-    fn max(&self) -> Self::Elem {
-        self.diagonal(self.base.max())
-    }
+impl<A> DistributiveLattice for VectorAlgebra<A> where A: DistributiveLattice {}
 
-    fn min(&self) -> Self::Elem {
-        self.diagonal(self.base.min())
+impl<A> BooleanAlgebra for VectorAlgebra<A>
+where
+    A: BooleanAlgebra,
+{
+    fn not(&self, elem: &Self::Elem) -> Self::Elem {
+        assert!(elem.len() == self.len);
+        elem.iter().map(|x| self.base.not(x)).collect()
     }
 }
-
-impl<A> DistributiveLattice for VectorAlgebra<A> where A: DistributiveLattice {}
