@@ -121,32 +121,6 @@ where
 
 impl<R> UnitaryRing for QuotientField<R> where R: EuclideanDomain {}
 
-impl<R> IntegralDomain for QuotientField<R>
-where
-    R: EuclideanDomain,
-{
-    fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
-        self.auto_try_div(elem1, elem2)
-    }
-
-    fn associate_repr(&self, elem: &Self::Elem) -> Self::Elem {
-        self.auto_associate_repr(elem)
-    }
-
-    fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
-        self.auto_associate_coef(elem)
-    }
-}
-
-impl<R> EuclideanDomain for QuotientField<R>
-where
-    R: EuclideanDomain,
-{
-    fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        self.auto_quo_rem(elem1, elem2)
-    }
-}
-
 impl<R> Field for QuotientField<R>
 where
     R: EuclideanDomain,

@@ -145,32 +145,6 @@ where
 
 impl<A> UnitaryRing for ReducedFractions<A> where A: EuclideanDomain {}
 
-impl<A> IntegralDomain for ReducedFractions<A>
-where
-    A: EuclideanDomain,
-{
-    fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
-        Some(self.div(elem1, elem2))
-    }
-
-    fn associate_repr(&self, elem: &Self::Elem) -> Self::Elem {
-        self.auto_associate_repr(elem)
-    }
-
-    fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
-        self.auto_associate_coef(elem)
-    }
-}
-
-impl<A> EuclideanDomain for ReducedFractions<A>
-where
-    A: EuclideanDomain,
-{
-    fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        self.auto_quo_rem(elem1, elem2)
-    }
-}
-
 impl<A> Field for ReducedFractions<A>
 where
     A: EuclideanDomain,

@@ -93,44 +93,6 @@ impl AbelianGroup for TwoElementAlgebra {
 
 impl UnitaryRing for TwoElementAlgebra {}
 
-impl IntegralDomain for TwoElementAlgebra {
-    fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
-        if *elem2 {
-            Some(*elem1)
-        } else {
-            None
-        }
-    }
-
-    fn divisible(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        *elem1 <= *elem2
-    }
-
-    fn associates(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        *elem1 == *elem2
-    }
-
-    fn associate_repr(&self, elem: &Self::Elem) -> Self::Elem {
-        *elem
-    }
-
-    fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
-        assert!(*elem);
-        true
-    }
-}
-
-impl EuclideanDomain for TwoElementAlgebra {
-    fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        assert!(*elem2);
-        (*elem1, false)
-    }
-
-    fn reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        !*elem1 || !*elem2
-    }
-}
-
 impl Field for TwoElementAlgebra {
     fn inv(&self, elem: &Self::Elem) -> Self::Elem {
         assert!(*elem);
@@ -153,7 +115,7 @@ impl PartialOrder for TwoElementAlgebra {
     }
 
     fn less_than(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        *elem1 < *elem2
+        !(*elem1) & *elem2
     }
 
     fn comparable(&self, _elem1: &Self::Elem, _elem2: &Self::Elem) -> bool {

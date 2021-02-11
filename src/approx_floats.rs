@@ -107,32 +107,6 @@ where
 
 impl<E> UnitaryRing for ApproxFloats<E> where E: Float + Debug + Zero + One + From<isize> {}
 
-impl<E> IntegralDomain for ApproxFloats<E>
-where
-    E: Float + Debug + Zero + One + From<isize>,
-{
-    fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
-        self.auto_try_div(elem1, elem2)
-    }
-
-    fn associate_repr(&self, elem: &Self::Elem) -> Self::Elem {
-        self.auto_associate_repr(elem)
-    }
-
-    fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
-        self.auto_associate_coef(elem)
-    }
-}
-
-impl<E> EuclideanDomain for ApproxFloats<E>
-where
-    E: Float + Debug + Zero + One + From<isize>,
-{
-    fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        self.auto_quo_rem(elem1, elem2)
-    }
-}
-
 impl<E> Field for ApproxFloats<E>
 where
     E: Float + Debug + Zero + One + From<isize>,

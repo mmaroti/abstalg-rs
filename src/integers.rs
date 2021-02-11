@@ -79,7 +79,14 @@ impl UnitaryRing for Integers {}
 
 impl IntegralDomain for Integers {
     fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
-        self.auto_try_div(elem1, elem2)
+        assert!(!elem2.is_zero());
+
+        let (quo, rem) = elem1.div_rem(elem2);
+        if rem.is_zero() {
+            Some(quo)
+        } else {
+            None
+        }
     }
 
     fn divisible(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {

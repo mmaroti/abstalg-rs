@@ -126,7 +126,14 @@ where
     E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
 {
     fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
-        self.auto_try_div(elem1, elem2)
+        assert!(*elem2 != 0.into());
+
+        let quo = elem1.checked_div(elem2).unwrap();
+        if *elem1 == quo * *elem2 {
+            Some(quo)
+        } else {
+            None
+        }
     }
 
     fn associate_repr(&self, elem: &Self::Elem) -> Self::Elem {

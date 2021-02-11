@@ -263,17 +263,6 @@ pub trait EuclideanDomain: IntegralDomain {
         let gcd = self.gcd(elem1, elem2);
         self.invertible(&gcd)
     }
-
-    #[doc(hidden)]
-    /// Default implementation of the integral domain `try_div` method.
-    fn auto_try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
-        let (quo, rem) = self.quo_rem(elem1, elem2);
-        if self.is_zero(&rem) {
-            Some(quo)
-        } else {
-            None
-        }
-    }
 }
 
 /// A field is a commutative ring with identity where each non-zero element
@@ -301,17 +290,14 @@ pub trait Field: EuclideanDomain {
             group.power(num, elem)
         }
     }
+}
 
-    #[doc(hidden)]
-    /// Default implementation of the Euclidean domain `quo_rem` method.
-    fn auto_quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
-        assert!(!self.is_zero(elem2));
-        (self.div(elem1, elem2), self.zero())
+impl<A: Field> IntegralDomain for A {
+    fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
+        Some(self.div(elem1, elem2))
     }
 
-    #[doc(hidden)]
-    /// Default implementation of the integral domain `associate_repr` method.
-    fn auto_associate_repr(&self, elem: &Self::Elem) -> Self::Elem {
+    fn associate_repr(&self, elem: &Self::Elem) -> Self::Elem {
         if self.is_zero(elem) {
             self.zero()
         } else {
@@ -319,10 +305,45 @@ pub trait Field: EuclideanDomain {
         }
     }
 
-    #[doc(hidden)]
-    /// Default implementation of the integral domain `associate_coef` method.
-    fn auto_associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
+    fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem {
         self.inv(elem)
+    }
+}
+
+impl<A: Field> EuclideanDomain for A {
+    fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
+        assert!(!self.is_zero(elem2));
+        (self.div(elem1, elem2), self.zero())
+    }
+
+    fn quo(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        assert!(!self.is_zero(elem2));
+        self.div(elem1, elem2)
+    }
+
+    fn rem(&self, _elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        assert!(!self.is_zero(elem2));
+        self.zero()
+    }
+
+    fn reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        self.is_zero(elem1) || self.is_zero(elem2)
+    }
+
+    fn gcd(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        if self.is_zero(elem1) && self.is_zero(elem2) {
+            self.zero()
+        } else {
+            self.one()
+        }
+    }
+
+    fn lcm(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        if self.is_zero(elem1) || self.is_zero(elem2) {
+            self.zero()
+        } else {
+            self.one()
+        }
     }
 }
 
