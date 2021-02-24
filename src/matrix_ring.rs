@@ -4,7 +4,7 @@
 use crate::*;
 
 /// The ring of rectangular matrices of a fixed size over a field.
-/// The elements are plain vectors of entries.
+/// The matrices are plain vectors of field elements.
 #[derive(Clone, Debug)]
 pub struct MatrixRing<A>
 where

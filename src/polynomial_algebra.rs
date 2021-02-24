@@ -239,9 +239,9 @@ where
     }
 }
 
-impl<F> EuclideanDomain for PolynomialAlgebra<F>
+impl<A> EuclideanDomain for PolynomialAlgebra<A>
 where
-    F: Field,
+    A: Field,
 {
     fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem) {
         assert!(!elem2.is_empty());
