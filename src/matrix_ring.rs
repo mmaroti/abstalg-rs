@@ -71,7 +71,7 @@ where
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        assert!(elem1.len() == self.len() && elem2.len() == elem1.len());
+        assert!(elem1.len() == self.len() && elem2.len() == self.len());
         elem1
             .iter()
             .zip(elem2.iter())
@@ -84,17 +84,17 @@ where
     A: Field,
 {
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        assert!(elem1.len() == self.len());
+        assert!(elem1.len() == self.len() && elem2.len() == self.len());
         let elem2 = self.transpose(elem2);
         let mut res = Vec::with_capacity(self.len());
         for row in 0..self.size {
             for col in 0..self.size {
                 let mut sum = self.base().zero();
-                for tmp in 0..self.size {
-                    let val1 = &elem1[row * self.size + tmp];
-                    let val2 = &elem2[col * self.size + tmp];
-                    self.base()
-                        .add_assign(&mut sum, &self.base().mul(val1, val2));
+                for idx in 0..self.size {
+                    let val1 = &elem1[row * self.size + idx];
+                    let val2 = &elem2[col * self.size + idx];
+                    let val3 = self.base().mul(val1, val2);
+                    self.base().add_assign(&mut sum, &val3);
                 }
                 res.push(sum)
             }
