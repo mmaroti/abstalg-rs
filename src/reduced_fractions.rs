@@ -153,9 +153,9 @@ where
         assert!(!self.base.is_zero(elem.numer()));
         let numer = elem.denom();
         let denom = elem.numer();
-        let coef = self.base.associate_coef(&denom);
+        let coef = self.base.associate_coef(denom);
         let (numer, denom) = if !self.base.is_one(&coef) {
-            (self.base.mul(&numer, &coef), self.base.mul(&denom, &coef))
+            (self.base.mul(numer, &coef), self.base.mul(denom, &coef))
         } else {
             (numer.clone(), denom.clone())
         };

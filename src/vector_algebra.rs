@@ -51,7 +51,7 @@ where
         if elem.len() != self.len {
             false
         } else {
-            elem.iter().all(|a| self.base.contains(&a))
+            elem.iter().all(|a| self.base.contains(a))
         }
     }
 
