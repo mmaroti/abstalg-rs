@@ -1,6 +1,6 @@
 Abstract Algebra for Rust
 =========================
-[![Build Status](https://travis-ci.com/mmaroti/abstalg-rs.svg?branch=master)](https://travis-ci.com/mmaroti/abstalg-rs)
+[![Build Status](https://travis-ci.com/mmaroti/abstalg-rs.svg?branch=master)](https://app.travis-ci.com/github/mmaroti/abstalg-rs)
 [![Crate](https://img.shields.io/crates/v/abstalg)](https://crates.io/crates/abstalg)
 [![Documentation](https://docs.rs/abstalg/badge.svg)](https://docs.rs/abstalg)
 [![GitHub](https://img.shields.io/github/license/mmaroti/abstalg-rs)](LICENSE)
