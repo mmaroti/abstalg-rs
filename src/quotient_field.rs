@@ -129,7 +129,6 @@ where
         assert!(!self.is_zero(elem));
         let (g, _, r) = self.base.extended_gcd(&self.modulo, elem);
         let a = self.base.try_inv(&g).expect("modulo was not irreducible");
-        println!("{:?}, {:?}, {:?}", g, r, a);
         self.mul(&a, &r)
     }
 }

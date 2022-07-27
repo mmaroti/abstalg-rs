@@ -115,7 +115,7 @@ impl PartialOrder for TwoElementAlgebra {
     }
 
     fn less_than(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
-        !(*elem1) & *elem2
+        !(*elem1) && *elem2
     }
 
     fn comparable(&self, _elem1: &Self::Elem, _elem2: &Self::Elem) -> bool {

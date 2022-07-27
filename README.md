@@ -24,4 +24,6 @@ can be constructed as the direct power of the 2-element boolean algebra.
 The divisibility order (on the set of association classes) with distributive
 lattice operations can be constructed for Euclidean domains, such as the
 ring of integers and the ring of polynomials over a field. The ring of 
-rectangular matrices can be formed over a field.
+rectangular matrices can be formed over a field. The linear group of 
+invertible matrices, and the special linear group of matrices of unit 
+determinant can be formed over any field.

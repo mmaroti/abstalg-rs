@@ -25,7 +25,7 @@ where
         Self { valg, size }
     }
 
-    /// Returns the base algebra from which this vector algebra was created.
+    /// Returns the base algebra from which this matrix ring was created.
     pub fn base(&self) -> &A {
         self.valg.base()
     }
@@ -43,8 +43,7 @@ where
     }
 
     /// Returns the transpose of the given matrix.
-    #[allow(clippy::ptr_arg)]
-    pub fn transpose(&self, elem: &Vec<A::Elem>) -> Vec<A::Elem> {
+    pub fn transpose(&self, elem: &<Self as Domain>::Elem) -> <Self as Domain>::Elem {
         assert!(elem.len() == self.len());
         let mut res = Vec::with_capacity(self.len());
         for row in 0..self.size {
@@ -53,6 +52,81 @@ where
             }
         }
         res
+    }
+
+    /// Multiplies the given row of the elem matrix with the given coefficient.
+    fn mul_row(&self, elem: &mut <Self as Domain>::Elem, row: usize, coef: &A::Elem) {
+        let row = row * self.size();
+        for val in &mut elem[row..row + self.size] {
+            self.base().mul_assign(val, coef);
+        }
+    }
+
+    /// Adds the first row, multiplied by the given coefficient, to the second
+    /// row of the matrix.
+    fn add_rows(
+        &self,
+        elem: &mut <Self as Domain>::Elem,
+        row1: usize,
+        row2: usize,
+        coef: &A::Elem,
+    ) {
+        let row1 = row1 * self.size();
+        let row2 = row2 * self.size();
+        for col in 0..self.size {
+            let val = self.base().mul(&elem[row1 + col], coef);
+            self.base().add_assign(&mut elem[row2 + col], &val);
+        }
+    }
+
+    /// Swaps the given rows of the matrix.
+    fn swap_rows(&self, elem: &mut <Self as Domain>::Elem, row1: usize, row2: usize) {
+        let row1 = row1 * self.size();
+        let row2 = row2 * self.size();
+        for col in 0..self.size {
+            elem.swap(row1 + col, row2 + col);
+        }
+    }
+
+    /// Helper function for Gauss-Jordan elimination, finds the next row.
+    fn find_row(&self, elem: &<Self as Domain>::Elem, col: usize) -> Option<usize> {
+        for row in col..self.size() {
+            if !self.base().is_zero(&elem[row * self.size() + col]) {
+                return Some(row);
+            }
+        }
+        None
+    }
+
+    /// Returns the determinant of the given matrix.
+    #[allow(clippy::ptr_arg)]
+    pub fn determinant(&self, elem: &<Self as Domain>::Elem) -> A::Elem {
+        let mut elem = elem.clone();
+        let mut det = self.base().one();
+
+        for col in 0..self.size {
+            if let Some(row) = self.find_row(&elem, col) {
+                if row != col {
+                    self.swap_rows(&mut elem, col, row);
+                }
+                let coef = &elem[col * self.size + col];
+                self.base().mul_assign(&mut det, coef);
+                let coef = self.base().inv(coef);
+                self.mul_row(&mut elem, col, &coef);
+                for row in col + 1..self.size {
+                    let coef = &elem[row * self.size() + col];
+                    if self.base().is_zero(coef) {
+                        continue;
+                    }
+                    let coef = self.base().neg(coef);
+                    self.add_rows(&mut elem, col, row, &coef);
+                }
+            } else {
+                return self.base().zero();
+            }
+        }
+
+        det
     }
 }
 
@@ -111,9 +185,42 @@ where
         self.int(1)
     }
 
-    // TODO: properly implement matrix inverses
-    fn try_inv(&self, _elem: &Self::Elem) -> Option<Self::Elem> {
-        None
+    fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        let mut elem = elem.clone();
+        let mut invs = self.one();
+
+        for col in 0..self.size {
+            if let Some(row) = self.find_row(&elem, col) {
+                if row != col {
+                    self.swap_rows(&mut elem, col, row);
+                    self.swap_rows(&mut invs, col, row);
+                }
+                let coef = self.base().inv(&elem[col * self.size + col]);
+                self.mul_row(&mut elem, col, &coef);
+                self.mul_row(&mut invs, col, &coef);
+                for row in 0..self.size {
+                    if row == col {
+                        continue;
+                    }
+                    let coef = &elem[row * self.size() + col];
+                    if self.base().is_zero(coef) {
+                        continue;
+                    }
+                    let coef = self.base().neg(coef);
+                    self.add_rows(&mut elem, col, row, &coef);
+                    self.add_rows(&mut invs, col, row, &coef);
+                }
+            } else {
+                return None;
+            }
+        }
+
+        debug_assert!(self.is_one(&elem));
+        Some(invs)
+    }
+
+    fn invertible(&self, elem: &Self::Elem) -> bool {
+        !self.base().is_zero(&self.determinant(elem))
     }
 }
 
@@ -187,5 +294,51 @@ mod tests {
 
         assert_eq!(ring.mul(&elem1, &ring.one()), elem1);
         assert_eq!(ring.mul(&ring.one(), &elem1), elem1);
+    }
+
+    #[test]
+    fn matrix_inv_gl23() {
+        let q = 3;
+        let field = QuotientField::new(I32, q);
+        let ring = MatrixRing::new(field.clone(), 2);
+
+        let mut elem = vec![0; ring.len()];
+        let mut gl23_count = 0;
+        let mut sl23_count = 0;
+
+        fn next(elem: &mut Vec<i32>, q: i32) -> bool {
+            for i in 0..elem.len() {
+                elem[i] += 1;
+                if elem[i] >= q {
+                    elem[i] = 0;
+                } else {
+                    return false;
+                }
+            }
+            true
+        }
+
+        loop {
+            let det = ring.determinant(&elem);
+            if ring.invertible(&elem) {
+                let invs = ring.try_inv(&elem).expect("not invertible");
+                let prod = ring.mul(&elem, &invs);
+                assert!(ring.is_one(&prod));
+                gl23_count += 1;
+
+                assert!(!field.is_zero(&det));
+                if field.is_one(&det) {
+                    sl23_count += 1;
+                }
+            } else {
+                assert!(field.is_zero(&det));
+            }
+            if next(&mut elem, q) {
+                break;
+            }
+        }
+
+        assert_eq!(gl23_count, 48);
+        assert_eq!(sl23_count, 24);
     }
 }

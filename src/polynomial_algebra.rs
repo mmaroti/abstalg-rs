@@ -33,7 +33,6 @@ where
 
     /// Returns the degree of the given polynomial. The zero polynomial has
     /// no degree.
-    #[allow(clippy::ptr_arg)]
     pub fn degree(&self, elem: &Vec<A::Elem>) -> Option<usize> {
         if elem.is_empty() {
             None
@@ -44,7 +43,6 @@ where
 
     /// Returns the leading coefficient of the given polynomial. The zero
     /// polynomial has no leading coefficient.
-    #[allow(clippy::ptr_arg)]
     pub fn leading_coef(&self, elem: &Vec<A::Elem>) -> Option<A::Elem> {
         if elem.is_empty() {
             None

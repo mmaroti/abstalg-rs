@@ -352,7 +352,7 @@ impl<A: Field> EuclideanDomain for A {
 /// integral domains (which might not be a lattice).
 pub trait PartialOrder: Domain {
     /// Returns true if the first element is less than or equal to the
-    /// second one in the lattice order.
+    /// second one in the partial order.
     fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool;
 
     /// Returns true if the first element is strictly less than the
