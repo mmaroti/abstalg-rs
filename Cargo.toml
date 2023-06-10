@@ -10,5 +10,8 @@ readme = "README.md"
 keywords = ["algebra", "ring", "field", "group", "lattice"]
 categories = ["mathematics", "science"]
 
+[features]
+float_fallback=[]
+
 [dependencies]
 num = "0.3"
