@@ -1,7 +1,7 @@
 [package]
 name = "abstalg"
-description = "Abstract algebraic structures for Rust" 
-version = "0.1.6"
+description = "Abstract algebraic structures for Rust"
+version = "0.1.7"
 authors = ["Miklos Maroti <mmaroti@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/mmaroti/abstalg-rs/"
@@ -11,7 +11,7 @@ keywords = ["algebra", "ring", "field", "group", "lattice"]
 categories = ["mathematics", "science"]
 
 [features]
-float_fallback=[]
+float_fallback = []
 
 [dependencies]
 num = "0.3"

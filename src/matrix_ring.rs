@@ -90,12 +90,7 @@ where
 
     /// Helper function for Gauss-Jordan elimination, finds the next row.
     fn find_row(&self, elem: &<Self as Domain>::Elem, col: usize) -> Option<usize> {
-        for row in col..self.size() {
-            if !self.base().is_zero(&elem[row * self.size() + col]) {
-                return Some(row);
-            }
-        }
-        None
+        (col..self.size()).find(|&row| !self.base().is_zero(&elem[row * self.size() + col]))
     }
 
     /// Returns the determinant of the given matrix.
