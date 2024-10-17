@@ -143,7 +143,10 @@ where
     }
 
     fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
-        let elem = Self::Elem::new_raw(self.base.times(num, elem.numer()), elem.denom().clone());
+        let elem = Self::Elem::new_raw(
+            AbelianGroup::times(&self.base, num, elem.numer()),
+            elem.denom().clone(),
+        );
         self.reduce(&elem)
     }
 }

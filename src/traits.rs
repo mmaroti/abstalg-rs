@@ -82,6 +82,20 @@ pub trait CommuntativeMonoid: Domain {
     fn double(&self, elem: &mut Self::Elem) {
         *elem = self.add(elem, elem);
     }
+
+    /// Returns an integer multiple of the given element.
+    fn times(&self, mut num: usize, elem: &Self::Elem) -> Self::Elem {
+        let mut elem = elem.clone();
+        let mut res = self.zero();
+        while num > 0 {
+            if num % 2 != 0 {
+                self.add_assign(&mut res, &elem);
+            }
+            num /= 2;
+            self.double(&mut elem);
+        }
+        res
+    }
 }
 
 /// An arbitrary (multiplicative) group, which is a monoid where every element has an inverse.
@@ -148,7 +162,7 @@ pub trait AbelianGroup: CommuntativeMonoid {
 pub trait UnitaryRing: AbelianGroup + Monoid {
     /// Returns the integer multiple of the one element in the ring.
     fn int(&self, elem: isize) -> Self::Elem {
-        self.times(elem, &self.one())
+        AbelianGroup::times(self, elem, &self.one())
     }
 }
 

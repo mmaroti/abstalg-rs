@@ -61,6 +61,14 @@ impl CommuntativeMonoid for Integers {
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         elem1 + elem2
     }
+
+    fn double(&self, elem: &mut Self::Elem) {
+        *elem *= 2;
+    }
+
+    fn times(&self, num: usize, elem: &Self::Elem) -> Self::Elem {
+        num * elem
+    }
 }
 
 impl AbelianGroup for Integers {

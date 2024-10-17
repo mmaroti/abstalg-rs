@@ -7,8 +7,14 @@ pub use traits::*;
 mod integers;
 pub use integers::*;
 
+mod naturals;
+pub use naturals::*;
+
 mod checked_ints;
 pub use checked_ints::*;
+
+mod checked_uints;
+pub use checked_uints::*;
 
 mod approx_floats;
 pub use approx_floats::*;
