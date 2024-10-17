@@ -178,7 +178,7 @@ pub trait UnitaryRing: SemiRing + AbelianGroup {
 pub trait IntegralDomain: UnitaryRing {
     /// Checks if the second element divides the first one and returns the
     /// unique quotient if it exists. This method panics if the second element
-    /// is zero (because there would be no unique solution).
+    /// is zero (because then there would be no unique solution).
     fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem>;
 
     /// Checks if the first element is a multiple of (or divisible by) the

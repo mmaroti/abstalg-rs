@@ -48,3 +48,6 @@ pub use matrix_ring::*;
 
 mod two_element_algebra;
 pub use two_element_algebra::*;
+
+mod permutations;
+pub use permutations::*;

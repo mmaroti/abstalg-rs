@@ -1,4 +1,4 @@
-// Copyright (C) 2020 Miklos Maroti
+// Copyright (C) 2024 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
 use crate::*;
