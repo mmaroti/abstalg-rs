@@ -51,7 +51,7 @@ impl Monoid for TwoElementAlgebra {
     }
 }
 
-impl AbelianGroup for TwoElementAlgebra {
+impl CommuntativeMonoid for TwoElementAlgebra {
     fn zero(&self) -> Self::Elem {
         false
     }
@@ -59,12 +59,6 @@ impl AbelianGroup for TwoElementAlgebra {
     fn is_zero(&self, elem: &Self::Elem) -> bool {
         !*elem
     }
-
-    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        *elem
-    }
-
-    fn neg_assign(&self, _elem: &mut Self::Elem) {}
 
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         *elem1 ^ *elem2
@@ -77,6 +71,14 @@ impl AbelianGroup for TwoElementAlgebra {
     fn double(&self, elem: &mut Self::Elem) {
         *elem = false
     }
+}
+
+impl AbelianGroup for TwoElementAlgebra {
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        *elem
+    }
+
+    fn neg_assign(&self, _elem: &mut Self::Elem) {}
 
     fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         *elem1 ^ *elem2

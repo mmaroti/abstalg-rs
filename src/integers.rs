@@ -49,7 +49,7 @@ impl Monoid for Integers {
     }
 }
 
-impl AbelianGroup for Integers {
+impl CommuntativeMonoid for Integers {
     fn zero(&self) -> Self::Elem {
         Zero::zero()
     }
@@ -58,12 +58,14 @@ impl AbelianGroup for Integers {
         elem.is_zero()
     }
 
-    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        -elem
-    }
-
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         elem1 + elem2
+    }
+}
+
+impl AbelianGroup for Integers {
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        -elem
     }
 
     fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {

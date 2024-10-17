@@ -89,7 +89,7 @@ where
     }
 }
 
-impl<E> AbelianGroup for CheckedInts<E>
+impl<E> CommuntativeMonoid for CheckedInts<E>
 where
     E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
 {
@@ -101,12 +101,17 @@ where
         elem.is_zero()
     }
 
-    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        self.zero().checked_sub(elem).unwrap()
-    }
-
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         elem1.checked_add(elem2).unwrap()
+    }
+}
+
+impl<E> AbelianGroup for CheckedInts<E>
+where
+    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
+{
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        self.zero().checked_sub(elem).unwrap()
     }
 
     fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {

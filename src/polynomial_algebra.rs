@@ -129,7 +129,7 @@ where
     }
 }
 
-impl<A> AbelianGroup for PolynomialAlgebra<A>
+impl<A> CommuntativeMonoid for PolynomialAlgebra<A>
 where
     A: AbelianGroup,
 {
@@ -139,10 +139,6 @@ where
 
     fn is_zero(&self, elem: &Self::Elem) -> bool {
         elem.is_empty()
-    }
-
-    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        elem.iter().map(|a| self.base.neg(a)).collect()
     }
 
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
@@ -168,6 +164,15 @@ where
             }
             elem3
         }
+    }
+}
+
+impl<A> AbelianGroup for PolynomialAlgebra<A>
+where
+    A: AbelianGroup,
+{
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        elem.iter().map(|a| self.base.neg(a)).collect()
     }
 
     fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {

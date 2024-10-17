@@ -133,9 +133,9 @@ where
     }
 }
 
-impl<A> AbelianGroup for VectorAlgebra<A>
+impl<A> CommuntativeMonoid for VectorAlgebra<A>
 where
-    A: AbelianGroup,
+    A: CommuntativeMonoid,
 {
     fn zero(&self) -> Self::Elem {
         self.diagonal(self.base.zero())
@@ -144,16 +144,6 @@ where
     fn is_zero(&self, elem: &Self::Elem) -> bool {
         assert!(elem.len() == self.len);
         elem.iter().all(|x| self.base.is_zero(x))
-    }
-
-    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        assert!(elem.len() == self.len);
-        elem.iter().map(|x| self.base.neg(x)).collect()
-    }
-
-    fn neg_assign(&self, elem: &mut Self::Elem) {
-        assert!(elem.len() == self.len);
-        elem.iter_mut().for_each(|x| self.base.neg_assign(x))
     }
 
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
@@ -176,6 +166,21 @@ where
     fn double(&self, elem: &mut Self::Elem) {
         assert!(elem.len() == self.len);
         elem.iter_mut().for_each(|x| self.base.double(x))
+    }
+}
+
+impl<A> AbelianGroup for VectorAlgebra<A>
+where
+    A: AbelianGroup,
+{
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        assert!(elem.len() == self.len);
+        elem.iter().map(|x| self.base.neg(x)).collect()
+    }
+
+    fn neg_assign(&self, elem: &mut Self::Elem) {
+        assert!(elem.len() == self.len);
+        elem.iter_mut().for_each(|x| self.base.neg_assign(x))
     }
 
     fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {

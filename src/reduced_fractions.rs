@@ -107,16 +107,12 @@ where
     }
 }
 
-impl<A> AbelianGroup for ReducedFractions<A>
+impl<A> CommuntativeMonoid for ReducedFractions<A>
 where
     A: EuclideanDomain,
 {
     fn zero(&self) -> Self::Elem {
         Self::Elem::new_raw(self.base.zero(), self.base.one())
-    }
-
-    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        Self::Elem::new_raw(self.base.neg(elem.numer()), elem.denom().clone())
     }
 
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
@@ -135,6 +131,15 @@ where
             )
         };
         self.reduce(&elem)
+    }
+}
+
+impl<A> AbelianGroup for ReducedFractions<A>
+where
+    A: EuclideanDomain,
+{
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        Self::Elem::new_raw(self.base.neg(elem.numer()), elem.denom().clone())
     }
 
     fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {

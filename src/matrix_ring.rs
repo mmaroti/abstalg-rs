@@ -219,7 +219,7 @@ where
     }
 }
 
-impl<A> AbelianGroup for MatrixRing<A>
+impl<A> CommuntativeMonoid for MatrixRing<A>
 where
     A: Field,
 {
@@ -229,14 +229,6 @@ where
 
     fn is_zero(&self, elem: &Self::Elem) -> bool {
         self.valg.is_zero(elem)
-    }
-
-    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        self.valg.neg(elem)
-    }
-
-    fn neg_assign(&self, elem: &mut Self::Elem) {
-        self.valg.neg_assign(elem)
     }
 
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
@@ -249,6 +241,19 @@ where
 
     fn double(&self, elem: &mut Self::Elem) {
         self.valg.double(elem);
+    }
+}
+
+impl<A> AbelianGroup for MatrixRing<A>
+where
+    A: Field,
+{
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        self.valg.neg(elem)
+    }
+
+    fn neg_assign(&self, elem: &mut Self::Elem) {
+        self.valg.neg_assign(elem)
     }
 
     fn sub(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {

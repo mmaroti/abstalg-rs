@@ -102,7 +102,7 @@ where
     }
 }
 
-impl<A> AbelianGroup for QuotientField<A>
+impl<A> CommuntativeMonoid for QuotientField<A>
 where
     A: EuclideanDomain,
 {
@@ -110,12 +110,17 @@ where
         self.base.zero()
     }
 
-    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        self.base.rem(&self.base.neg(elem), &self.modulo)
-    }
-
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.base.rem(&self.base.add(elem1, elem2), &self.modulo)
+    }
+}
+
+impl<A> AbelianGroup for QuotientField<A>
+where
+    A: EuclideanDomain,
+{
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        self.base.rem(&self.base.neg(elem), &self.modulo)
     }
 }
 

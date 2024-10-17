@@ -2,9 +2,12 @@
 // Licensed under the MIT license (see LICENSE)
 
 use crate::*;
-use num::{Float, One, Zero};
+use num::{One, Zero};
 use std::fmt::Debug;
 use std::marker::PhantomData;
+
+#[cfg(not(feature = "float_fallback"))]
+use num::Float;
 
 /// The field of reals approximated by machine `f32` values.
 pub const F32: ApproxFloats<f32> = ApproxFloats {
@@ -73,7 +76,7 @@ where
 }
 
 #[cfg(not(feature = "float_fallback"))]
-impl<E> AbelianGroup for ApproxFloats<E>
+impl<E> CommuntativeMonoid for ApproxFloats<E>
 where
     E: Float + Debug + Zero + One + From<isize>,
 {
@@ -85,14 +88,20 @@ where
         elem.is_zero()
     }
 
-    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        let elem = -*elem;
+    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        let elem = *elem1 + *elem2;
         assert!(elem.is_finite());
         elem
     }
+}
 
-    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let elem = *elem1 + *elem2;
+#[cfg(not(feature = "float_fallback"))]
+impl<E> AbelianGroup for ApproxFloats<E>
+where
+    E: Float + Debug + Zero + One + From<isize>,
+{
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        let elem = -*elem;
         assert!(elem.is_finite());
         elem
     }
@@ -195,7 +204,7 @@ impl Monoid for ApproxFloats<f64> {
 }
 
 #[cfg(feature = "float_fallback")]
-impl AbelianGroup for ApproxFloats<f64> {
+impl CommuntativeMonoid for ApproxFloats<f64> {
     fn zero(&self) -> Self::Elem {
         Zero::zero()
     }
@@ -204,14 +213,17 @@ impl AbelianGroup for ApproxFloats<f64> {
         elem.is_zero()
     }
 
-    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        let elem = -*elem;
+    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        let elem = *elem1 + *elem2;
         assert!(elem.is_finite());
         elem
     }
+}
 
-    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let elem = *elem1 + *elem2;
+#[cfg(feature = "float_fallback")]
+impl AbelianGroup for ApproxFloats<f64> {
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        let elem = -*elem;
         assert!(elem.is_finite());
         elem
     }
@@ -305,7 +317,7 @@ impl Monoid for ApproxFloats<f32> {
 }
 
 #[cfg(feature = "float_fallback")]
-impl AbelianGroup for ApproxFloats<f32> {
+impl CommuntativeMonoid for ApproxFloats<f32> {
     fn zero(&self) -> Self::Elem {
         Zero::zero()
     }
@@ -314,14 +326,17 @@ impl AbelianGroup for ApproxFloats<f32> {
         elem.is_zero()
     }
 
-    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        let elem = -*elem;
+    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        let elem = *elem1 + *elem2;
         assert!(elem.is_finite());
         elem
     }
+}
 
-    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        let elem = *elem1 + *elem2;
+#[cfg(feature = "float_fallback")]
+impl AbelianGroup for ApproxFloats<f32> {
+    fn neg(&self, elem: &Self::Elem) -> Self::Elem {
+        let elem = -*elem;
         assert!(elem.is_finite());
         elem
     }
@@ -378,6 +393,9 @@ impl DistributiveLattice for ApproxFloats<f32> {}
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "float_fallback")]
+    use super::*;
+
     #[test]
     #[cfg(feature = "float_fallback")]
     fn assertions() {

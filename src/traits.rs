@@ -39,7 +39,7 @@ pub trait Semigroup: Domain {
     }
 }
 
-/// An arbitrary (multiplicative) monoid, which is a semigroup with an identity element.
+/// An arbitrary multiplicative monoid, which is a semigroup with an identity element.
 /// Typical examples are the multiplicative monoid of unitary rings.
 pub trait Monoid: Semigroup {
     /// The multiplicative identity element of the ring.
@@ -56,6 +56,31 @@ pub trait Monoid: Semigroup {
     /// Returns true if the given element has a multiplicative inverse.
     fn invertible(&self, elem: &Self::Elem) -> bool {
         self.try_inv(elem).is_some()
+    }
+}
+
+/// An arbitrary commutative (additive) monoid. A typical example is the set of
+/// natural numbers including zero with addition.
+pub trait CommuntativeMonoid: Domain {
+    /// The additive identity element of the commutative monoid.
+    fn zero(&self) -> Self::Elem;
+
+    /// Checks if the given element is the additive identity of the monoid.
+    fn is_zero(&self, elem: &Self::Elem) -> bool {
+        self.equals(elem, &self.zero())
+    }
+
+    /// The additive sum of the given elements
+    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
+
+    /// The second element is added to the first one.
+    fn add_assign(&self, elem1: &mut Self::Elem, elem2: &Self::Elem) {
+        *elem1 = self.add(elem1, elem2);
+    }
+
+    /// Doubles the given element in place.
+    fn double(&self, elem: &mut Self::Elem) {
+        *elem = self.add(elem, elem);
     }
 }
 
@@ -90,34 +115,13 @@ pub trait Group: Monoid {
 
 /// A commutative group written in additive notation. Typical examples
 /// are the additive structures of rings, fields and vector spaces.
-pub trait AbelianGroup: Domain {
-    /// The additive identity element of the ring.
-    fn zero(&self) -> Self::Elem;
-
-    /// Checks if the given element is the additive identity of the ring.
-    fn is_zero(&self, elem: &Self::Elem) -> bool {
-        self.equals(elem, &self.zero())
-    }
-
+pub trait AbelianGroup: CommuntativeMonoid {
     /// The additive inverse of the given element.
     fn neg(&self, elem: &Self::Elem) -> Self::Elem;
 
     /// The element is changed to its additive inverse.
     fn neg_assign(&self, elem: &mut Self::Elem) {
         *elem = self.neg(elem);
-    }
-
-    /// The additive sum of the given elements
-    fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
-
-    /// The second element is added to the first one.
-    fn add_assign(&self, elem1: &mut Self::Elem, elem2: &Self::Elem) {
-        *elem1 = self.add(elem1, elem2);
-    }
-
-    /// Doubles the given element in place.
-    fn double(&self, elem: &mut Self::Elem) {
-        *elem = self.add(elem, elem);
     }
 
     /// The difference of the given elements.
