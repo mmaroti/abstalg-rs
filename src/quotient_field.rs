@@ -124,6 +124,8 @@ where
     }
 }
 
+impl<A> SemiRing for QuotientField<A> where A: EuclideanDomain {}
+
 impl<A> UnitaryRing for QuotientField<A> where A: EuclideanDomain {}
 
 impl<A> Field for QuotientField<A>

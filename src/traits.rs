@@ -157,9 +157,13 @@ pub trait AbelianGroup: CommuntativeMonoid {
     }
 }
 
+/// A (not necessarily commutative) semiring. Typical examples are the set
+/// of natural numbers.
+pub trait SemiRing: CommuntativeMonoid + Monoid {}
+
 /// A ring with an identity element (not necessarily commutative). Typical
 /// examples are the rings of rectangular matrices, integers and polynomials.
-pub trait UnitaryRing: AbelianGroup + Monoid {
+pub trait UnitaryRing: SemiRing + AbelianGroup {
     /// Returns the integer multiple of the one element in the ring.
     fn int(&self, elem: isize) -> Self::Elem {
         AbelianGroup::times(self, elem, &self.one())

@@ -99,6 +99,8 @@ where
     }
 }
 
+impl<A> SemiRing for QuotientRing<A> where A: EuclideanDomain {}
+
 impl<A> UnitaryRing for QuotientRing<A> where A: EuclideanDomain {}
 
 #[cfg(test)]

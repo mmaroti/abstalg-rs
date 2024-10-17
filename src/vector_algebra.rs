@@ -201,6 +201,8 @@ where
     }
 }
 
+impl<A> SemiRing for VectorAlgebra<A> where A: SemiRing {}
+
 impl<A> UnitaryRing for VectorAlgebra<A>
 where
     A: UnitaryRing,

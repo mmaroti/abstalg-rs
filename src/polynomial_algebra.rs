@@ -190,6 +190,8 @@ where
     }
 }
 
+impl<A> SemiRing for PolynomialAlgebra<A> where A: UnitaryRing {}
+
 impl<A> UnitaryRing for PolynomialAlgebra<A> where A: UnitaryRing {}
 
 impl<A> IntegralDomain for PolynomialAlgebra<A>

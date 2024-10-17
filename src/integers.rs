@@ -85,6 +85,8 @@ impl AbelianGroup for Integers {
     }
 }
 
+impl SemiRing for Integers {}
+
 impl UnitaryRing for Integers {}
 
 impl IntegralDomain for Integers {

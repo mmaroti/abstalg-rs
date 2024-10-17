@@ -119,6 +119,9 @@ where
 }
 
 #[cfg(not(feature = "float_fallback"))]
+impl<E> SemiRing for ApproxFloats<E> where E: Float + Debug + Zero + One + From<isize> {}
+
+#[cfg(not(feature = "float_fallback"))]
 impl<E> UnitaryRing for ApproxFloats<E> where E: Float + Debug + Zero + One + From<isize> {}
 
 #[cfg(not(feature = "float_fallback"))]
@@ -241,6 +244,9 @@ impl AbelianGroup for ApproxFloats<f64> {
 }
 
 #[cfg(feature = "float_fallback")]
+impl SemiRing for ApproxFloats<f64> {}
+
+#[cfg(feature = "float_fallback")]
 impl UnitaryRing for ApproxFloats<f64> {}
 
 #[cfg(feature = "float_fallback")]
@@ -352,6 +358,9 @@ impl AbelianGroup for ApproxFloats<f32> {
         num * *elem
     }
 }
+
+#[cfg(feature = "float_fallback")]
+impl SemiRing for ApproxFloats<f32> {}
 
 #[cfg(feature = "float_fallback")]
 impl UnitaryRing for ApproxFloats<f32> {}

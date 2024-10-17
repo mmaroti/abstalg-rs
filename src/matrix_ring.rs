@@ -265,6 +265,8 @@ where
     }
 }
 
+impl<A> SemiRing for MatrixRing<A> where A: Field {}
+
 impl<A> UnitaryRing for MatrixRing<A>
 where
     A: Field,

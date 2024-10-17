@@ -93,6 +93,8 @@ impl AbelianGroup for TwoElementAlgebra {
     }
 }
 
+impl SemiRing for TwoElementAlgebra {}
+
 impl UnitaryRing for TwoElementAlgebra {}
 
 impl Field for TwoElementAlgebra {

@@ -151,6 +151,8 @@ where
     }
 }
 
+impl<A> SemiRing for ReducedFractions<A> where A: EuclideanDomain {}
+
 impl<A> UnitaryRing for ReducedFractions<A> where A: EuclideanDomain {}
 
 impl<A> Field for ReducedFractions<A>

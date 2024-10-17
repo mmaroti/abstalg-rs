@@ -106,6 +106,8 @@ where
     }
 }
 
+impl<E> SemiRing for CheckedUints<E> where E: PrimInt + Unsigned + Debug + From<u8> + TryFrom<usize> {}
+
 impl<E> PartialOrder for CheckedUints<E>
 where
     E: PrimInt + Unsigned + Debug + From<u8> + TryFrom<usize>,
