@@ -1,8 +1,8 @@
 // Copyright (C) 2020 Miklos Maroti
 // Licensed under the MIT license (see LICENSE)
 
-//! A module that contains the basic sets on which various algebraic structures
-//! are implemented.
+//! A module that contains the basic sets on which various algebraic
+//! structures are implemented.
 
 use crate::*;
 use std::fmt::Debug;
@@ -23,7 +23,8 @@ pub trait Domain: Clone {
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool;
 }
 
-/// An arbitrary (multiplicative) semigroup, which is set with an associative binary operation.
+/// An arbitrary (multiplicative) semigroup, which is set with an associative
+/// binary operation.
 pub trait Semigroup: Domain {
     /// The multiplicative product of the given elements.
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
@@ -39,8 +40,8 @@ pub trait Semigroup: Domain {
     }
 }
 
-/// An arbitrary multiplicative monoid, which is a semigroup with an identity element.
-/// Typical examples are the multiplicative monoid of unitary rings.
+/// An arbitrary multiplicative monoid, which is a semigroup with an identity
+/// element. Typical examples are the multiplicative monoid of unitary rings.
 pub trait Monoid: Semigroup {
     /// The multiplicative identity element of the ring.
     fn one(&self) -> Self::Elem;
@@ -50,7 +51,8 @@ pub trait Monoid: Semigroup {
         self.equals(elem, &self.one())
     }
 
-    /// Calculates the multiplicative inverse of the given element if it exists.
+    /// Calculates the multiplicative inverse of the given element if it
+    /// exists.
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem>;
 
     /// Returns true if the given element has a multiplicative inverse.
@@ -59,8 +61,8 @@ pub trait Monoid: Semigroup {
     }
 }
 
-/// An arbitrary commutative (additive) monoid. A typical example is the set of
-/// natural numbers including zero with addition.
+/// An arbitrary commutative (additive) monoid. A typical example is the set
+/// of natural numbers including zero with addition.
 pub trait CommuntativeMonoid: Domain {
     /// The additive identity element of the commutative monoid.
     fn zero(&self) -> Self::Elem;
@@ -98,15 +100,17 @@ pub trait CommuntativeMonoid: Domain {
     }
 }
 
-/// An arbitrary (multiplicative) group, which is a monoid where every element has an inverse.
-/// Typical examples are the multiplicative and additive group of rings.
+/// An arbitrary (multiplicative) group, which is a monoid where every element
+/// has an inverse. Typical examples are the multiplicative and additive group
+/// of rings.
 pub trait Group: Monoid {
     /// Returns the inverse of the given element element.
     fn inv(&self, elem: &Self::Elem) -> Self::Elem {
         self.try_inv(elem).unwrap()
     }
 
-    /// Returns the power of the given element using the square and multiply method.
+    /// Returns the power of the given element using the square and multiply
+    /// method.
     fn power(&self, mut num: isize, elem: &Self::Elem) -> Self::Elem {
         let mut elem = if num < 0 {
             num = -num;

@@ -3,11 +3,11 @@
 
 use crate::*;
 
-/// The divisibility partial order of an integral domain where the elements are
-/// the unique representatives of associate classes, the largest element is
-/// zero, the smallest element is one. If the domain is Euclidean, this is a
-/// bounded distributive lattice where the meet is the greatest common divisor,
-/// the join is the least common multiple.
+/// The divisibility partial order of an integral domain where the elements
+/// are the unique representatives of associate classes, the largest element
+/// is zero, the smallest element is one. If the domain is Euclidean, this is
+/// a bounded distributive lattice where the meet is the greatest common
+/// divisor, the join is the least common multiple.
 #[derive(Clone, Debug)]
 pub struct DivisibilityOrder<A>
 where

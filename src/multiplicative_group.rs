@@ -3,8 +3,8 @@
 
 use crate::*;
 
-/// The multiplicative group of a unitary ring or field, or more generally the group of invertible
-/// elements of any monoid.
+/// The multiplicative group of a unitary ring or field, or more generally
+/// the group of invertible elements of any monoid.
 #[derive(Clone, Debug)]
 pub struct MultiplicativeGroup<A>
 where
