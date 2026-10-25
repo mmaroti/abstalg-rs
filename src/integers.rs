@@ -35,7 +35,9 @@ impl Monoid for Integers {
     fn is_one(&self, elem: &Self::Elem) -> bool {
         elem.is_one()
     }
+}
 
+impl InvertibleMonoid for Integers {
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         if self.invertible(elem) {
             Some(elem.clone())

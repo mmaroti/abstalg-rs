@@ -9,6 +9,13 @@ use crate::*;
 /// element, and every polynomial has a unique representation. Polynomials
 /// can be defined over any abelian group, though only the group operations
 /// will be available.
+/// Inversion is available only when the base is an integral domain.
+///
+/// ```compile_fail
+/// use abstalg::*;
+/// let ring = PolynomialAlgebra::new(QuotientRing::new(I32, 4));
+/// ring.try_inv(&vec![1, 2]);
+/// ```
 #[derive(Clone, Debug)]
 pub struct PolynomialAlgebra<A>
 where
@@ -121,7 +128,12 @@ where
     fn is_one(&self, elem: &Self::Elem) -> bool {
         elem.len() == 1 && self.base.is_one(&elem[0])
     }
+}
 
+impl<A> InvertibleMonoid for PolynomialAlgebra<A>
+where
+    A: IntegralDomain,
+{
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         if elem.len() == 1 {
             if let Some(elem) = self.base.try_inv(&elem[0]) {
@@ -291,6 +303,16 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn try_inv() {
+        let ring = PolynomialAlgebra::new(I32);
+        assert_eq!(ring.try_inv(&vec![1]), Some(vec![1]));
+        assert_eq!(ring.try_inv(&vec![-1]), Some(vec![-1]));
+        assert_eq!(ring.try_inv(&vec![2]), None);
+        assert_eq!(ring.try_inv(&vec![]), None);
+        assert_eq!(ring.try_inv(&vec![0, 1]), None);
+    }
 
     #[test]
     fn mul_zero_divisors() {

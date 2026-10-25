@@ -83,7 +83,9 @@ impl Monoid for Permutations {
         }
         true
     }
+}
 
+impl InvertibleMonoid for Permutations {
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         debug_assert_eq!(elem.len(), self.size as usize);
         let mut inv = vec![0; self.size as usize];

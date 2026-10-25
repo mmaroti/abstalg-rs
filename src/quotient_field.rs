@@ -88,7 +88,12 @@ where
     fn is_one(&self, elem: &Self::Elem) -> bool {
         self.base.is_one(elem)
     }
+}
 
+impl<A> InvertibleMonoid for QuotientField<A>
+where
+    A: EuclideanDomain,
+{
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         if self.is_zero(elem) {
             None

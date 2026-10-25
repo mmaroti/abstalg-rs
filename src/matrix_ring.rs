@@ -180,7 +180,12 @@ where
     fn one(&self) -> Self::Elem {
         self.int(1)
     }
+}
 
+impl<A> InvertibleMonoid for MatrixRing<A>
+where
+    A: Field,
+{
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         let mut elem = elem.clone();
         let mut invs = self.one();

@@ -70,7 +70,12 @@ where
     fn is_one(&self, elem: &Self::Elem) -> bool {
         self.base.is_zero(elem)
     }
+}
 
+impl<A> InvertibleMonoid for AdditiveGroup<A>
+where
+    A: AbelianGroup,
+{
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         Some(self.base.neg(elem))
     }

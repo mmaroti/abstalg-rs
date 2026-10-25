@@ -39,7 +39,9 @@ impl Monoid for TwoElementAlgebra {
     fn is_one(&self, elem: &Self::Elem) -> bool {
         *elem
     }
+}
 
+impl InvertibleMonoid for TwoElementAlgebra {
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         if *elem {
             Some(true)

@@ -51,9 +51,12 @@ pub trait Monoid: Semigroup {
     fn is_one(&self, elem: &Self::Elem) -> bool {
         self.equals(elem, &self.one())
     }
+}
 
-    /// Calculates the multiplicative inverse of the given element if it
-    /// exists.
+/// A monoid whose invertible elements can be recognized and inverted.
+pub trait InvertibleMonoid: Monoid {
+    /// Returns the multiplicative inverse, or `None` if the element is not
+    /// invertible.
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem>;
 
     /// Returns true if the given element has a multiplicative inverse.
@@ -109,7 +112,7 @@ pub use CommutativeMonoid as CommuntativeMonoid;
 /// An arbitrary (multiplicative) group, which is a monoid where every element
 /// has an inverse. Typical examples are the additive groups of rings and the
 /// multiplicative groups of their invertible elements.
-pub trait Group: Monoid {
+pub trait Group: InvertibleMonoid {
     /// Returns the inverse of the given element.
     fn inv(&self, elem: &Self::Elem) -> Self::Elem {
         self.try_inv(elem).unwrap()
@@ -187,7 +190,7 @@ pub trait UnitaryRing: SemiRing + AbelianGroup {
 /// non-zero elements is non-zero. This trait adds operations for divisibility
 /// and associates. Typical examples are the integers and the ring of
 /// polynomials with integer coefficients; the latter is not a Euclidean domain.
-pub trait IntegralDomain: UnitaryRing {
+pub trait IntegralDomain: UnitaryRing + InvertibleMonoid {
     /// Checks if the second element divides the first one and returns the
     /// unique quotient if it exists. This method panics if the second element
     /// is zero (because then there would be no unique solution).

@@ -103,7 +103,12 @@ where
         assert!(elem.len() == self.len);
         elem.iter().all(|x| self.base.is_one(x))
     }
+}
 
+impl<A> InvertibleMonoid for VectorAlgebra<A>
+where
+    A: InvertibleMonoid,
+{
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         assert!(elem.len() == self.len);
         let mut v = Vec::with_capacity(self.len);

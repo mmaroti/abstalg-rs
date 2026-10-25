@@ -37,7 +37,9 @@ impl Monoid for Naturals {
     fn is_one(&self, elem: &Self::Elem) -> bool {
         elem.is_one()
     }
+}
 
+impl InvertibleMonoid for Naturals {
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         if elem.is_one() {
             Some(One::one())

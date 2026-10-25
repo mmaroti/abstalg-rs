@@ -95,7 +95,12 @@ where
     fn is_one(&self, elem: &Self::Elem) -> bool {
         self.base.is_one(elem.numer()) && self.base.is_one(elem.denom())
     }
+}
 
+impl<A> InvertibleMonoid for ReducedFractions<A>
+where
+    A: EuclideanDomain,
+{
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         if self.invertible(elem) {
             let elem = Self::Elem::new_raw(elem.denom().clone(), elem.numer().clone());

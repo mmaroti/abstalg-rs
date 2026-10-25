@@ -75,7 +75,12 @@ where
     fn is_one(&self, elem: &Self::Elem) -> bool {
         *elem == 1.into()
     }
+}
 
+impl<E> InvertibleMonoid for CheckedInts<E>
+where
+    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
+{
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         if self.invertible(elem) {
             Some(*elem)

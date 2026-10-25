@@ -58,7 +58,12 @@ where
     fn one(&self) -> Self::Elem {
         One::one()
     }
+}
 
+impl<E> InvertibleMonoid for ApproxFloats<E>
+where
+    E: Float + Debug,
+{
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         let elem = self.one() / *elem;
         if elem.is_finite() {

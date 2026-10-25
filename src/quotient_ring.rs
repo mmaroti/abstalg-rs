@@ -74,7 +74,12 @@ where
     fn one(&self) -> Self::Elem {
         self.reduce(self.base.one())
     }
+}
 
+impl<A> InvertibleMonoid for QuotientRing<A>
+where
+    A: EuclideanDomain,
+{
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         if self.base.is_zero(&self.modulo) {
             return self.base.try_inv(elem);
