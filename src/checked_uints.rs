@@ -134,3 +134,17 @@ impl<E> DistributiveLattice for CheckedUints<E> where
     E: PrimInt + Unsigned + Debug + From<u8> + TryFrom<usize>
 {
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn times_avoids_unused_overflow() {
+        assert_eq!(CommutativeMonoid::times(&U8, 0, &255), 0);
+        assert_eq!(CommutativeMonoid::times(&U8, 1, &200), 200);
+        assert_eq!(CommutativeMonoid::times(&U8, 2, &100), 200);
+        assert_eq!(CommutativeMonoid::times(&U8, 3, &80), 240);
+        assert_eq!(CommutativeMonoid::times(&U8, 255, &1), 255);
+    }
+}

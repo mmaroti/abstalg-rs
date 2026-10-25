@@ -103,6 +103,7 @@ where
             if let Some(row) = self.find_row(&elem, col) {
                 if row != col {
                     self.swap_rows(&mut elem, col, row);
+                    self.base().neg_assign(&mut det);
                 }
                 let coef = &elem[col * self.size + col];
                 self.base().mul_assign(&mut det, coef);
@@ -284,6 +285,34 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn matrix_det() {
+        let ring = MatrixRing::new(QQ, 2);
+
+        let elem = vec![QQ.int(0), QQ.int(1), QQ.int(1), QQ.int(0)];
+        assert_eq!(ring.determinant(&elem), QQ.int(-1));
+
+        let elem = vec![QQ.int(0), QQ.int(2), QQ.int(3), QQ.int(4)];
+        assert_eq!(ring.determinant(&elem), QQ.int(-6));
+
+        let elem = vec![QQ.int(1), QQ.int(2), QQ.int(3), QQ.int(4)];
+        assert_eq!(ring.determinant(&elem), QQ.int(-2));
+
+        let ring = MatrixRing::new(QQ, 3);
+        let elem = vec![
+            QQ.int(0),
+            QQ.int(2),
+            QQ.int(0),
+            QQ.int(0),
+            QQ.int(0),
+            QQ.int(3),
+            QQ.int(5),
+            QQ.int(0),
+            QQ.int(0),
+        ];
+        assert_eq!(ring.determinant(&elem), QQ.int(30));
+    }
 
     #[test]
     fn matrix_mul() {

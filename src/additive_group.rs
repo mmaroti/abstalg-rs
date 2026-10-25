@@ -88,3 +88,37 @@ where
         self.base.neg(elem)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn power_avoids_unused_overflow() {
+        let group = AdditiveGroup::new(I8);
+
+        assert_eq!(group.power(0, &100), 0);
+        assert_eq!(group.power(1, &100), 100);
+        assert_eq!(group.power(-1, &100), -100);
+        assert_eq!(group.power(2, &60), 120);
+        assert_eq!(group.power(-2, &60), -120);
+        assert_eq!(group.power(3, &40), 120);
+        assert_eq!(group.power(-3, &40), -120);
+        assert_eq!(group.power(-128, &1), -128);
+    }
+
+    #[test]
+    fn power_extreme_exponents() {
+        let group = AdditiveGroup::new(ZZ);
+
+        for num in [isize::MIN, isize::MIN + 1, -1, 0, 1, isize::MAX] {
+            for elem in [ZZ.int(-1), ZZ.zero(), ZZ.one()] {
+                let expected = ZZ.mul(&ZZ.int(num), &elem);
+                assert_eq!(group.power(num, &elem), expected);
+            }
+        }
+
+        let group = AdditiveGroup::new(I64);
+        assert_eq!(group.power(isize::MIN, &1), isize::MIN as i64);
+    }
+}

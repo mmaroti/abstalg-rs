@@ -94,7 +94,9 @@ pub trait CommutativeMonoid: Domain {
                 self.add_assign(&mut res, &elem);
             }
             num /= 2;
-            self.double(&mut elem);
+            if num > 0 {
+                self.double(&mut elem);
+            }
         }
         res
     }
@@ -114,13 +116,13 @@ pub trait Group: Monoid {
 
     /// Returns the power of the given element using the square-and-multiply
     /// method.
-    fn power(&self, mut num: isize, elem: &Self::Elem) -> Self::Elem {
+    fn power(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
         let mut elem = if num < 0 {
-            num = -num;
             self.inv(elem)
         } else {
             elem.clone()
         };
+        let mut num = num.unsigned_abs();
 
         let mut res = self.one();
         while num > 0 {
@@ -128,7 +130,9 @@ pub trait Group: Monoid {
                 self.mul_assign(&mut res, &elem);
             }
             num /= 2;
-            self.square(&mut elem);
+            if num > 0 {
+                self.square(&mut elem);
+            }
         }
         res
     }
