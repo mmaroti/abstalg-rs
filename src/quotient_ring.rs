@@ -42,7 +42,7 @@ where
     type Elem = A::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.base.reduced(elem, &self.modulo)
+        self.base.contains(elem) && self.base.reduced(elem, &self.modulo)
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
@@ -106,6 +106,17 @@ impl<A> UnitaryRing for QuotientRing<A> where A: EuclideanDomain {}
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn contains() {
+        let ring = QuotientRing::new(PolynomialAlgebra::new(GF2), vec![1, 1, 1]);
+        assert!(ring.contains(&vec![]));
+        assert!(ring.contains(&vec![0, 1]));
+        assert!(!ring.contains(&vec![0]));
+        assert!(!ring.contains(&vec![1, 0]));
+        assert!(!ring.contains(&vec![2]));
+        assert!(!ring.contains(&vec![1, 1, 1]));
+    }
 
     #[test]
     fn zstar_1584() {

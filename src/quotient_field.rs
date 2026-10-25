@@ -60,7 +60,7 @@ where
     type Elem = A::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.base.reduced(elem, &self.modulo)
+        self.base.contains(elem) && self.base.reduced(elem, &self.modulo)
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
@@ -143,6 +143,17 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn contains() {
+        let field = QuotientField::new(PolynomialAlgebra::new(GF2), vec![1, 1, 1]);
+        assert!(field.contains(&vec![]));
+        assert!(field.contains(&vec![0, 1]));
+        assert!(!field.contains(&vec![0]));
+        assert!(!field.contains(&vec![1, 0]));
+        assert!(!field.contains(&vec![2]));
+        assert!(!field.contains(&vec![1, 1, 1]));
+    }
 
     #[test]
     fn field_1721() {

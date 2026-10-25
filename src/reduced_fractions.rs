@@ -58,8 +58,11 @@ where
     type Elem = Ratio<A::Elem>;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.base.relative_primes(elem.numer(), elem.denom())
+        self.base.contains(elem.numer())
+            && self.base.contains(elem.denom())
+            && !self.base.is_zero(elem.denom())
             && self.base.is_one(&self.base.associate_coef(elem.denom()))
+            && self.base.relative_primes(elem.numer(), elem.denom())
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
@@ -176,6 +179,22 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn contains() {
+        let field = ReducedFractions::new(I8);
+        assert!(field.contains(&Ratio::new_raw(1, 2)));
+        assert!(field.contains(&Ratio::new_raw(i8::MIN, 1)));
+        assert!(!field.contains(&Ratio::new_raw(1, 0)));
+        assert!(!field.contains(&Ratio::new_raw(i8::MIN, -1)));
+        assert!(!field.contains(&Ratio::new_raw(2, 4)));
+        assert!(!field.contains(&Ratio::new_raw(1, -2)));
+
+        let field = ReducedFractions::new(PolynomialAlgebra::new(GF2));
+        assert!(field.contains(&Ratio::new_raw(vec![0, 1], vec![1])));
+        assert!(!field.contains(&Ratio::new_raw(vec![0], vec![1])));
+        assert!(!field.contains(&Ratio::new_raw(vec![1], vec![1, 0])));
+    }
 
     #[test]
     fn ops() {

@@ -14,7 +14,8 @@ pub trait Domain: Clone {
     /// The type of the elements of this domain.
     type Elem: Clone + Debug;
 
-    /// Checks if the given object is a member of the domain.
+    /// Checks membership for any `Self::Elem`, returning false for invalid
+    /// representations.
     fn contains(&self, _elem: &Self::Elem) -> bool {
         true
     }

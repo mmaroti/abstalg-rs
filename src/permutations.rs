@@ -31,7 +31,7 @@ impl Domain for Permutations {
         } else {
             let mut used = vec![false; self.size as usize];
             for &a in elem.iter() {
-                if used[a as usize] {
+                if a >= self.size || used[a as usize] {
                     return false;
                 }
                 used[a as usize] = true;
@@ -103,6 +103,16 @@ impl Group for Permutations {}
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn contains() {
+        let group = Permutations::new(2);
+        assert!(group.contains(&vec![1, 0]));
+        assert!(!group.contains(&vec![]));
+        assert!(!group.contains(&vec![0, 0]));
+        assert!(!group.contains(&vec![0, 2]));
+        assert!(!group.contains(&vec![0, u32::MAX]));
+    }
 
     #[test]
     fn s4() {

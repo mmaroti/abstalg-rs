@@ -35,7 +35,7 @@ where
     type Elem = A::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.base.invertible(elem)
+        self.base.contains(elem) && self.base.invertible(elem)
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
@@ -87,5 +87,19 @@ where
 {
     fn inv(&self, elem: &Self::Elem) -> Self::Elem {
         self.base.try_inv(elem).unwrap()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn contains() {
+        let group = MultiplicativeGroup::new(Permutations::new(2));
+        assert!(group.contains(&vec![1, 0]));
+        assert!(!group.contains(&vec![0]));
+        assert!(!group.contains(&vec![0, 0]));
+        assert!(!group.contains(&vec![0, 2]));
     }
 }

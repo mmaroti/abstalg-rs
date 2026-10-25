@@ -32,7 +32,8 @@ impl<A: IntegralDomain> Domain for DivisibilityOrder<A> {
     type Elem = A::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.base.is_zero(elem) || self.base.is_one(&self.base.associate_coef(elem))
+        self.base.contains(elem)
+            && (self.base.is_zero(elem) || self.base.is_one(&self.base.associate_coef(elem)))
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
@@ -73,6 +74,16 @@ impl<A: EuclideanDomain> DistributiveLattice for DivisibilityOrder<A> {}
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn contains() {
+        let lat = DivisibilityOrder::new(PolynomialAlgebra::new(ZZ));
+        assert!(lat.contains(&vec![]));
+        assert!(lat.contains(&vec![ZZ.one()]));
+        assert!(!lat.contains(&vec![ZZ.zero()]));
+        assert!(!lat.contains(&vec![ZZ.one(), ZZ.zero()]));
+        assert!(!lat.contains(&vec![ZZ.int(-1)]));
+    }
 
     #[test]
     fn order() {
