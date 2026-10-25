@@ -51,3 +51,6 @@ pub use two_element_algebra::*;
 
 mod permutations;
 pub use permutations::*;
+
+mod rewrite_system;
+pub use rewrite_system::*;

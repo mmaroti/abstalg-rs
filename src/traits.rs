@@ -426,3 +426,38 @@ pub trait BooleanAlgebra: DistributiveLattice + BoundedOrder {
     /// Returns the complement (logical negation) of the given element.
     fn not(&self, elem: &Self::Elem) -> Self::Elem;
 }
+
+/// A universal algebra with arbitrary number of operations.
+pub trait UniversalAlgebra: Domain {
+    /// Returns the names and arities of the operations of this algebra.
+    fn signature(&self) -> &[(&str, usize)];
+
+    /// Evaluates the given operation with the given elements.
+    fn evaluate(&self, oper: usize, elems: &[&Self::Elem]) -> Self::Elem;
+
+    /// Evaluates the given constant operation.
+    fn evaluate0(&self, oper: usize) -> Self::Elem {
+        self.evaluate(oper, &[])
+    }
+
+    /// Evaluates the given unary operation.
+    fn evaluate1(&self, oper: usize, elem1: &Self::Elem) -> Self::Elem {
+        self.evaluate(oper, &[elem1])
+    }
+
+    /// Evaluates the given binary operation.
+    fn evaluate2(&self, oper: usize, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
+        self.evaluate(oper, &[elem1, elem2])
+    }
+
+    /// Evaluates the given ternary operation.
+    fn evaluate3(
+        &self,
+        oper: usize,
+        elem1: &Self::Elem,
+        elem2: &Self::Elem,
+        elem3: &Self::Elem,
+    ) -> Self::Elem {
+        self.evaluate(oper, &[elem1, elem2, elem3])
+    }
+}
