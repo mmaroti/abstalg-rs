@@ -101,6 +101,9 @@ where
                     elem3[i + j] = self.base.add(&elem3[i + j], &a);
                 }
             }
+            while elem3.last().map_or(false, |elem| self.base.is_zero(elem)) {
+                elem3.pop();
+            }
             elem3
         }
     }
@@ -288,6 +291,18 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn mul_zero_divisors() {
+        let ring = PolynomialAlgebra::new(QuotientRing::new(I32, 4));
+
+        let elem = vec![0, 2];
+        assert_eq!(ring.mul(&elem, &elem), ring.zero());
+
+        let elem = vec![1, 2];
+        assert_eq!(ring.mul(&elem, &elem), ring.one());
+        assert_eq!(ring.mul(&elem, &vec![0, 2]), vec![0, 2]);
+    }
 
     #[test]
     fn field_256() {
