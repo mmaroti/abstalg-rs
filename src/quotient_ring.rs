@@ -33,6 +33,14 @@ where
     pub fn modulo(&self) -> &A::Elem {
         &self.modulo
     }
+
+    fn reduce(&self, elem: A::Elem) -> A::Elem {
+        if self.base.is_zero(&self.modulo) {
+            elem
+        } else {
+            self.base.rem(&elem, &self.modulo)
+        }
+    }
 }
 
 impl<A> Domain for QuotientRing<A>
@@ -55,7 +63,7 @@ where
     A: EuclideanDomain,
 {
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        self.base.rem(&self.base.mul(elem1, elem2), &self.modulo)
+        self.reduce(self.base.mul(elem1, elem2))
     }
 }
 
@@ -64,14 +72,13 @@ where
     A: EuclideanDomain,
 {
     fn one(&self) -> Self::Elem {
-        self.base.one()
-    }
-
-    fn is_one(&self, elem: &Self::Elem) -> bool {
-        self.base.is_one(elem)
+        self.reduce(self.base.one())
     }
 
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
+        if self.base.is_zero(&self.modulo) {
+            return self.base.try_inv(elem);
+        }
         let (g, _, r) = self.base.extended_gcd(&self.modulo, elem);
         self.base.try_inv(&g).map(|a| self.mul(&a, &r))
     }
@@ -86,7 +93,7 @@ where
     }
 
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
-        self.base.rem(&self.base.add(elem1, elem2), &self.modulo)
+        self.reduce(self.base.add(elem1, elem2))
     }
 }
 
@@ -95,7 +102,7 @@ where
     A: EuclideanDomain,
 {
     fn neg(&self, elem: &Self::Elem) -> Self::Elem {
-        self.base.rem(&self.base.neg(elem), &self.modulo)
+        self.reduce(self.base.neg(elem))
     }
 }
 
@@ -106,6 +113,56 @@ impl<A> UnitaryRing for QuotientRing<A> where A: EuclideanDomain {}
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn zero_modulus() {
+        let ring = QuotientRing::new(I32, 0);
+        assert_eq!(ring.one(), 1);
+        assert!(ring.is_one(&1));
+        assert!(!ring.is_one(&0));
+
+        for a in -5..=5 {
+            assert!(ring.contains(&a));
+            assert_eq!(ring.int(a as isize), a);
+            assert_eq!(ring.neg(&a), -a);
+            assert_eq!(ring.try_inv(&a), I32.try_inv(&a));
+            for b in -5..=5 {
+                assert_eq!(ring.add(&a, &b), a + b);
+                assert_eq!(ring.sub(&a, &b), a - b);
+                assert_eq!(ring.mul(&a, &b), a * b);
+            }
+        }
+    }
+
+    #[test]
+    fn zero_polynomial_modulus() {
+        let ring = QuotientRing::new(PolynomialAlgebra::new(GF2), vec![]);
+        let elem = vec![0, 1];
+        assert!(ring.contains(&elem));
+        assert!(!ring.contains(&vec![0]));
+        assert_eq!(ring.one(), vec![1]);
+        assert_eq!(ring.add(&elem, &elem), vec![]);
+        assert_eq!(ring.mul(&elem, &elem), vec![0, 0, 1]);
+        assert_eq!(ring.neg(&elem), elem);
+        assert_eq!(ring.try_inv(&elem), None);
+        assert_eq!(ring.try_inv(&vec![1]), Some(vec![1]));
+    }
+
+    #[test]
+    fn unit_modulus() {
+        for modulo in [-1, 1] {
+            let ring = QuotientRing::new(I32, modulo);
+            assert_eq!(ring.one(), 0);
+            assert!(ring.contains(&ring.one()));
+            assert!(!ring.contains(&1));
+            assert!(ring.is_one(&ring.zero()));
+            assert_eq!(ring.int(-3), 0);
+            assert_eq!(ring.add(&0, &0), 0);
+            assert_eq!(ring.mul(&0, &0), 0);
+            assert_eq!(ring.neg(&0), 0);
+            assert_eq!(ring.try_inv(&0), Some(0));
+        }
+    }
 
     #[test]
     fn contains() {
