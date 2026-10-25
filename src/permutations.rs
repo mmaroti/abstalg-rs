@@ -3,6 +3,7 @@
 
 use crate::*;
 
+/// The group of permutations on a sized set.
 #[derive(Clone, Debug)]
 pub struct Permutations {
     size: u32,

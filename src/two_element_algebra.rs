@@ -6,6 +6,8 @@ use crate::*;
 /// The two-element boolean algebra and field with `bool` elements.
 pub const BB: TwoElementAlgebra = TwoElementAlgebra();
 
+/// A two-element algebra on the set {0,1} which can be a boolean lattice,
+/// abelian group or field.
 #[derive(Clone, Debug)]
 pub struct TwoElementAlgebra();
 
