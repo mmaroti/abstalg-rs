@@ -3,7 +3,7 @@
 
 use crate::*;
 
-/// A quotient ring of an Euclidean domain by a principal ideal.
+/// A quotient ring of a Euclidean domain by a principal ideal.
 #[derive(Clone, Debug)]
 pub struct QuotientRing<A>
 where
@@ -18,7 +18,7 @@ where
     A: EuclideanDomain,
 {
     /// Creates a new quotient ring from the given Euclidean domain and
-    /// one of its element.
+    /// one of its elements.
     pub fn new(base: A, modulo: A::Elem) -> Self {
         assert!(base.contains(&modulo));
         QuotientRing { base, modulo }
@@ -29,7 +29,7 @@ where
         &self.base
     }
 
-    /// Returns the modulo element from which this ring was constructed.
+    /// Returns the modulus from which this ring was constructed.
     pub fn modulo(&self) -> &A::Elem {
         &self.modulo
     }
@@ -77,7 +77,7 @@ where
     }
 }
 
-impl<A> CommuntativeMonoid for QuotientRing<A>
+impl<A> CommutativeMonoid for QuotientRing<A>
 where
     A: EuclideanDomain,
 {
@@ -109,7 +109,7 @@ mod tests {
 
     #[test]
     fn zstar_1584() {
-        let ring = QuotientRing::new(I32, 1584); // 16 * 9 *11
+        let ring = QuotientRing::new(I32, 1584); // 16 * 9 * 11
 
         let mut count = 0;
         for a in 0..1584 {

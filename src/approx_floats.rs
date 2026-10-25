@@ -19,10 +19,10 @@ pub const F64: ApproxFloats<f64> = ApproxFloats {
     phantom: PhantomData,
 };
 
-/// The field of real numbers approximated by a primitive floating point
-/// number. NaN and infinity values are not considered as members, so all
-/// operations resulting one of these will panic. The lattice order is the
-/// normal total order, which is not bounded.
+/// The field of real numbers approximated by primitive floating-point
+/// values. NaN and infinite values are excluded from the domain. Checked
+/// arithmetic operations panic if their result is not finite. The lattice
+/// order is the normal total order, which is not bounded.
 #[derive(Clone, Debug)]
 pub struct ApproxFloats<E> {
     phantom: PhantomData<E>,
@@ -76,7 +76,7 @@ where
 }
 
 #[cfg(not(feature = "float_fallback"))]
-impl<E> CommuntativeMonoid for ApproxFloats<E>
+impl<E> CommutativeMonoid for ApproxFloats<E>
 where
     E: Float + Debug + Zero + One + From<isize>,
 {
@@ -207,7 +207,7 @@ impl Monoid for ApproxFloats<f64> {
 }
 
 #[cfg(feature = "float_fallback")]
-impl CommuntativeMonoid for ApproxFloats<f64> {
+impl CommutativeMonoid for ApproxFloats<f64> {
     fn zero(&self) -> Self::Elem {
         Zero::zero()
     }
@@ -323,7 +323,7 @@ impl Monoid for ApproxFloats<f32> {
 }
 
 #[cfg(feature = "float_fallback")]
-impl CommuntativeMonoid for ApproxFloats<f32> {
+impl CommutativeMonoid for ApproxFloats<f32> {
     fn zero(&self) -> Self::Elem {
         Zero::zero()
     }

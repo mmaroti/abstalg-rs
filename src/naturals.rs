@@ -4,13 +4,13 @@
 use crate::*;
 use num::{BigUint, One, Zero};
 
-/// The commutative monoid of natural numbers (including zero) with arbitrary
+/// The commutative monoid of natural numbers (including zero) with arbitrarily
 /// large values.
 pub const NN: Naturals = Naturals();
 
 /// The set of natural numbers (including zero) whose elements are
-/// [BigUint](../num/struct.BigUint.html) objects. The semilattice and
-/// commutative semilattice operations are the normal ones while the
+/// [`BigUint`] objects. The semiring
+/// operations are the usual addition and multiplication, while the
 /// lattice order is the normal total order.
 #[derive(Clone, Debug)]
 pub struct Naturals();
@@ -51,7 +51,7 @@ impl Monoid for Naturals {
     }
 }
 
-impl CommuntativeMonoid for Naturals {
+impl CommutativeMonoid for Naturals {
     fn zero(&self) -> Self::Elem {
         Zero::zero()
     }

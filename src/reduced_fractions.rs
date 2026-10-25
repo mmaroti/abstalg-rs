@@ -4,12 +4,12 @@
 use crate::*;
 use num::rational::Ratio;
 
-/// The field of rational numbers with arbitrary large values.
+/// The field of rational numbers with arbitrarily large values.
 pub const QQ: ReducedFractions<Integers> = ReducedFractions { base: Integers() };
 
-/// The field of fractions over the elements of an Euclidean domain. The
-/// elements are ratios where the numerator and denominator are relative
-/// primes and the denominator is normalized with respect to its associate
+/// The field of fractions over the elements of a Euclidean domain. The
+/// elements are ratios where the numerator and denominator are relatively
+/// prime and the denominator is normalized with respect to its associate
 /// class.
 #[derive(Clone, Debug)]
 pub struct ReducedFractions<A>
@@ -24,7 +24,7 @@ where
     A: EuclideanDomain,
 {
     /// Creates a new field of fractions over the given ring. The ring cannot
-    /// be trivial, that is one must be different from zero.
+    /// be trivial; that is, one must be different from zero.
     pub fn new(base: A) -> Self {
         assert!(!base.is_zero(&base.one()));
         Self { base }
@@ -107,7 +107,7 @@ where
     }
 }
 
-impl<A> CommuntativeMonoid for ReducedFractions<A>
+impl<A> CommutativeMonoid for ReducedFractions<A>
 where
     A: EuclideanDomain,
 {

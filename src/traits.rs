@@ -9,7 +9,7 @@ use std::fmt::Debug;
 
 /// An arbitrary set of elements where not all representable objects are
 /// members of the set. The same element can be represented by different
-/// objects, thus the `equals` method shall be used in place of `==`.
+/// objects, so the `equals` method should be used in place of `==`.
 pub trait Domain: Clone {
     /// The type of the elements of this domain.
     type Elem: Clone + Debug;
@@ -23,13 +23,13 @@ pub trait Domain: Clone {
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool;
 }
 
-/// An arbitrary (multiplicative) semigroup, which is set with an associative
+/// An arbitrary (multiplicative) semigroup, which is a set with an associative
 /// binary operation.
 pub trait Semigroup: Domain {
     /// The multiplicative product of the given elements.
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
 
-    /// The first element is multiplied with the second one in place.
+    /// Multiplies the first element by the second one in place.
     fn mul_assign(&self, elem1: &mut Self::Elem, elem2: &Self::Elem) {
         *elem1 = self.mul(elem1, elem2);
     }
@@ -41,9 +41,9 @@ pub trait Semigroup: Domain {
 }
 
 /// An arbitrary multiplicative monoid, which is a semigroup with an identity
-/// element. Typical examples are the multiplicative monoid of unitary rings.
+/// element. Typical examples are the multiplicative monoids of unitary rings.
 pub trait Monoid: Semigroup {
-    /// The multiplicative identity element of the ring.
+    /// The multiplicative identity element of the monoid.
     fn one(&self) -> Self::Elem;
 
     /// Checks if the given element is the multiplicative identity.
@@ -63,7 +63,7 @@ pub trait Monoid: Semigroup {
 
 /// An arbitrary commutative (additive) monoid. A typical example is the set
 /// of natural numbers including zero with addition.
-pub trait CommuntativeMonoid: Domain {
+pub trait CommutativeMonoid: Domain {
     /// The additive identity element of the commutative monoid.
     fn zero(&self) -> Self::Elem;
 
@@ -72,7 +72,7 @@ pub trait CommuntativeMonoid: Domain {
         self.equals(elem, &self.zero())
     }
 
-    /// The additive sum of the given elements
+    /// The additive sum of the given elements.
     fn add(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem;
 
     /// The second element is added to the first one.
@@ -100,16 +100,19 @@ pub trait CommuntativeMonoid: Domain {
     }
 }
 
+/// Compatibility alias for the original spelling of [`CommutativeMonoid`].
+pub use CommutativeMonoid as CommuntativeMonoid;
+
 /// An arbitrary (multiplicative) group, which is a monoid where every element
-/// has an inverse. Typical examples are the multiplicative and additive group
-/// of rings.
+/// has an inverse. Typical examples are the additive groups of rings and the
+/// multiplicative groups of their invertible elements.
 pub trait Group: Monoid {
-    /// Returns the inverse of the given element element.
+    /// Returns the inverse of the given element.
     fn inv(&self, elem: &Self::Elem) -> Self::Elem {
         self.try_inv(elem).unwrap()
     }
 
-    /// Returns the power of the given element using the square and multiply
+    /// Returns the power of the given element using the square-and-multiply
     /// method.
     fn power(&self, mut num: isize, elem: &Self::Elem) -> Self::Elem {
         let mut elem = if num < 0 {
@@ -132,8 +135,8 @@ pub trait Group: Monoid {
 }
 
 /// A commutative group written in additive notation. Typical examples
-/// are the additive structures of rings, fields and vector spaces.
-pub trait AbelianGroup: CommuntativeMonoid {
+/// are the additive structures of rings, fields, and vector spaces.
+pub trait AbelianGroup: CommutativeMonoid {
     /// The additive inverse of the given element.
     fn neg(&self, elem: &Self::Elem) -> Self::Elem;
 
@@ -161,24 +164,24 @@ pub trait AbelianGroup: CommuntativeMonoid {
     }
 }
 
-/// A (not necessarily commutative) semiring. Typical examples are the set
-/// of natural numbers.
-pub trait SemiRing: CommuntativeMonoid + Monoid {}
+/// A (not necessarily commutative) semiring. A typical example is the set
+/// of natural numbers with addition and multiplication.
+pub trait SemiRing: CommutativeMonoid + Monoid {}
 
 /// A ring with an identity element (not necessarily commutative). Typical
-/// examples are the rings of rectangular matrices, integers and polynomials.
+/// examples are the rings of square matrices, integers, and polynomials.
 pub trait UnitaryRing: SemiRing + AbelianGroup {
-    /// Returns the integer multiple of the one element in the ring.
+    /// Returns the given integer multiple of the multiplicative identity
+    /// of the ring.
     fn int(&self, elem: isize) -> Self::Elem {
         AbelianGroup::times(self, elem, &self.one())
     }
 }
 
 /// An integral domain is a commutative unitary ring in which the product of
-/// non-zero elements are non-zero. This trait not add any new operations,
-/// just marks the properties of the ring. A typical examples are the
-/// integers, and the ring of polynomials with integer coefficients, which is
-/// not an Euclidean domain.
+/// non-zero elements is non-zero. This trait adds operations for divisibility
+/// and associates. Typical examples are the integers and the ring of
+/// polynomials with integer coefficients; the latter is not a Euclidean domain.
 pub trait IntegralDomain: UnitaryRing {
     /// Checks if the second element divides the first one and returns the
     /// unique quotient if it exists. This method panics if the second element
@@ -195,50 +198,48 @@ pub trait IntegralDomain: UnitaryRing {
         }
     }
 
-    /// Returns true if the two elements are associates (divide each other)
+    /// Returns true if the two elements are associates (divide each other).
     fn associates(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         self.divisible(elem1, elem2) && self.divisible(elem2, elem1)
     }
 
-    /// We assume, that among all associates of the given elem there is a
-    /// well defined unique one (non-negative for integers, zero or monic
-    /// for polynomials). This method returns that representative element.
+    /// We assume that among all associates of the given element there is a
+    /// unique, well-defined representative (non-negative for integers, zero
+    /// or monic for polynomials). This method returns that representative element.
     fn associate_repr(&self, elem: &Self::Elem) -> Self::Elem;
 
-    /// Returns the unique invertible element which is the quotient of the
-    /// associate representative and the given element. This method panics
+    /// Returns the unique invertible element obtained by dividing the
+    /// associate representative by the given element. This method panics
     /// if the element is zero.
     fn associate_coef(&self, elem: &Self::Elem) -> Self::Elem;
 }
 
-/// An Euclidean domain is an integral domain where the Euclidean algorithm
+/// A Euclidean domain is an integral domain where the Euclidean algorithm
 /// can be implemented. Typical examples are the rings of integers and
 /// polynomials.
 pub trait EuclideanDomain: IntegralDomain {
-    /// Performs the euclidean division algorithm dividing the first elem
-    /// with the second one and returning the quotient and the remainder.
+    /// Performs Euclidean division, dividing the first element by the second
+    /// one and returning the quotient and the remainder.
     /// This method panics if the second element is zero (because there is
-    /// no unique solution)
+    /// no unique solution).
     fn quo_rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> (Self::Elem, Self::Elem);
 
-    /// Performs the division just like the [quo_rem](EuclideanDomain::quo_rem)
-    /// method would do and returns the quotient. This method panics if the
-    /// second element is zero.
+    /// Performs division as in [quo_rem](EuclideanDomain::quo_rem) and returns
+    /// the quotient. This method panics if the second element is zero.
     fn quo(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.quo_rem(elem1, elem2).0
     }
 
-    /// Performs the division just like the [quo_rem](EuclideanDomain::quo_rem)
-    /// method would do and returns the remainder. This method panics if the
-    /// second element is zero.
+    /// Performs division as in [quo_rem](EuclideanDomain::quo_rem) and returns
+    /// the remainder. This method panics if the second element is zero.
     fn rem(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.quo_rem(elem1, elem2).1
     }
 
     /// Returns true if the second element is zero or the first element
-    /// has zero quotient by the second one. These are the representative
-    /// elements of the factor ring by the principal ideal generated by
-    /// the second element.
+    /// has a zero quotient when divided by the second one. These are the
+    /// representative elements of the factor ring by the principal ideal
+    /// generated by the second element.
     fn reduced(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         self.is_zero(elem2) || self.is_zero(&self.quo(elem1, elem2))
     }
@@ -256,7 +257,7 @@ pub trait EuclideanDomain: IntegralDomain {
         elem1
     }
 
-    /// Calculates the lest common divisor of the two elements.
+    /// Calculates the least common multiple of the two elements.
     fn lcm(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         let gcd = self.gcd(elem1, elem2);
         if self.is_zero(&gcd) {
@@ -266,9 +267,9 @@ pub trait EuclideanDomain: IntegralDomain {
         }
     }
 
-    /// Performs the extended Euclidean algorithm which returns the greatest
-    /// common divisor, and two elements that multiplied with the inputs gives
-    /// the greatest common divisor.
+    /// Performs the extended Euclidean algorithm, returning the greatest
+    /// common divisor and two coefficients whose products with the respective
+    /// inputs sum to the greatest common divisor.
     fn extended_gcd(
         &self,
         elem1: &Self::Elem,
@@ -284,7 +285,7 @@ pub trait EuclideanDomain: IntegralDomain {
         }
     }
 
-    /// Checks if the given two elements are relative prime.
+    /// Checks if the two given elements are relatively prime.
     fn relative_primes(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         let gcd = self.gcd(elem1, elem2);
         self.invertible(&gcd)
@@ -292,8 +293,8 @@ pub trait EuclideanDomain: IntegralDomain {
 }
 
 /// A field is a commutative ring with identity where each non-zero element
-/// has a multiplicative inverse. Typical examples are the real, complex and
-/// rational numbers, and finite fields constructed from an Euclidean domain
+/// has a multiplicative inverse. Typical examples are the real, complex, and
+/// rational numbers, and finite fields constructed from a Euclidean domain
 /// and one of its irreducible elements. All fields are Euclidean domains
 /// themselves, with a rather trivial structure.
 pub trait Field: EuclideanDomain {
@@ -373,9 +374,9 @@ impl<A: Field> EuclideanDomain for A {
     }
 }
 
-/// A set with a reflexive, transitive and antisymmetric relation.
-/// Typical examples are the lattices and the divisibility relation of
-/// integral domains (which might not be a lattice).
+/// A set with a reflexive, transitive, and antisymmetric relation.
+/// Typical examples are lattices and the divisibility order on associate
+/// classes of integral domains (which need not be a lattice).
 pub trait PartialOrder: Domain {
     /// Returns true if the first element is less than or equal to the
     /// second one in the partial order.
@@ -394,19 +395,19 @@ pub trait PartialOrder: Domain {
     }
 }
 
-/// A partial order that has a largest and smallest element. Typical
+/// A partial order that has a largest and a smallest element. Typical
 /// examples are bounded lattices.
 pub trait BoundedOrder: PartialOrder {
-    /// Returns the largest element of the lattice.
+    /// Returns the largest element of the order.
     fn max(&self) -> Self::Elem;
 
-    /// Returns the smallest element of the lattice.
+    /// Returns the smallest element of the order.
     fn min(&self) -> Self::Elem;
 }
 
 /// A set where the join and meet of elements can be calculated. Typical
 /// examples are the total orders of integers or the divisibility relation
-/// on the associate classes of an Euclidean domain.
+/// on the associate classes of a Euclidean domain.
 pub trait Lattice: PartialOrder {
     /// Returns the largest element that is less than or equal to both given
     /// elements.
@@ -421,7 +422,7 @@ pub trait Lattice: PartialOrder {
 pub trait DistributiveLattice: Lattice {}
 
 /// A Boolean algebra, which is a complemented bounded distributive lattice.
-/// Typical examples are the two-element boolean algebra and the power sets.
+/// Typical examples are the two-element Boolean algebra and power sets.
 pub trait BooleanAlgebra: DistributiveLattice + BoundedOrder {
     /// Returns the complement (logical negation) of the given element.
     fn not(&self, elem: &Self::Elem) -> Self::Elem;

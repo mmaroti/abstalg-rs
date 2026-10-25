@@ -3,7 +3,7 @@
 
 use crate::*;
 
-/// The ring of rectangular matrices of a fixed size over a field.
+/// The ring of square matrices of a fixed size over a field.
 /// The matrices are plain vectors of field elements.
 #[derive(Clone, Debug)]
 pub struct MatrixRing<A>
@@ -54,7 +54,7 @@ where
         res
     }
 
-    /// Multiplies the given row of the elem matrix with the given coefficient.
+    /// Multiplies the given row of the matrix by the given coefficient.
     fn mul_row(&self, elem: &mut <Self as Domain>::Elem, row: usize, coef: &A::Elem) {
         let row = row * self.size();
         for val in &mut elem[row..row + self.size] {
@@ -88,7 +88,7 @@ where
         }
     }
 
-    /// Helper function for Gauss-Jordan elimination, finds the next row.
+    /// Finds the next pivot row for Gauss-Jordan elimination.
     fn find_row(&self, elem: &<Self as Domain>::Elem, col: usize) -> Option<usize> {
         (col..self.size()).find(|&row| !self.base().is_zero(&elem[row * self.size() + col]))
     }
@@ -219,7 +219,7 @@ where
     }
 }
 
-impl<A> CommuntativeMonoid for MatrixRing<A>
+impl<A> CommutativeMonoid for MatrixRing<A>
 where
     A: Field,
 {

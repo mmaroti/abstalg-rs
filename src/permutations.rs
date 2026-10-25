@@ -3,19 +3,20 @@
 
 use crate::*;
 
-/// The group of permutations on a sized set.
+/// The group of permutations on a set of fixed size. Each permutation is
+/// represented by a vector of `u32` values.
 #[derive(Clone, Debug)]
 pub struct Permutations {
     size: u32,
 }
 
-/// The group of permutations on a set of fixed size. Each permutation is
-/// represented by a vector of u32 values.
 impl Permutations {
+    /// Creates a new permutation group on a set of the given size.
     pub fn new(size: u32) -> Self {
         Permutations { size }
     }
 
+    /// Returns the number of elements in the set being permuted.
     pub fn size(&self) -> u32 {
         self.size
     }

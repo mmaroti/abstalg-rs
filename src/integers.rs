@@ -4,11 +4,11 @@
 use crate::*;
 use num::{BigInt, Integer, One, Signed, Zero};
 
-/// The Euclidean ring of integers with arbitrary large values.
+/// The Euclidean ring of integers with arbitrarily large values.
 pub const ZZ: Integers = Integers();
 
 /// The set of integers whose elements are
-/// [BigInt](../num/struct.BigInt.html) objects. The ring operations are the
+/// [`BigInt`] objects. The ring operations are the
 /// normal ones. The lattice order is the normal total order.
 #[derive(Clone, Debug)]
 pub struct Integers();
@@ -49,7 +49,7 @@ impl Monoid for Integers {
     }
 }
 
-impl CommuntativeMonoid for Integers {
+impl CommutativeMonoid for Integers {
     fn zero(&self) -> Self::Elem {
         Zero::zero()
     }

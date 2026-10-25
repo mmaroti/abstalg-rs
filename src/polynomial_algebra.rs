@@ -5,7 +5,7 @@ use crate::*;
 
 /// The ring of polynomials over a base ring or field where each element
 /// is represented as a vector whose last element, the leading coefficient (if
-/// any) must be non-zero. This means that the empty vector is the zero
+/// any), must be non-zero. This means that the empty vector is the zero
 /// element, and every polynomial has a unique representation. Polynomials
 /// can be defined over any abelian group, though only the group operations
 /// will be available.
@@ -26,7 +26,7 @@ where
         Self { base }
     }
 
-    /// Returns the base ring from which this ring was created.
+    /// Returns the base algebra from which this polynomial algebra was created.
     pub fn base(&self) -> &A {
         &self.base
     }
@@ -129,7 +129,7 @@ where
     }
 }
 
-impl<A> CommuntativeMonoid for PolynomialAlgebra<A>
+impl<A> CommutativeMonoid for PolynomialAlgebra<A>
 where
     A: AbelianGroup,
 {
@@ -294,13 +294,13 @@ mod tests {
         let field1 = QuotientField::new(I32, 2);
         let ring = PolynomialAlgebra::new(field1);
 
-        // the irreducible polynomial 1 + x + x^3 + x^4 + x^8
+        // The irreducible polynomial 1 + x + x^3 + x^4 + x^8.
         let poly = vec![1, 1, 0, 1, 1, 0, 0, 0, 1];
         assert!(ring.contains(&poly));
         assert_eq!(ring.degree(&poly), Some(8));
         let field2 = QuotientField::new(ring, poly);
 
-        // 1 + x, primitive element, generate all 256 elements
+        // Use the primitive element 1 + x to generate all nonzero elements.
         let gen = vec![1, 1];
         let mut elems = Vec::new();
         elems.push(field2.zero());

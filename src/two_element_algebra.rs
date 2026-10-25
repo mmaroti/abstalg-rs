@@ -3,11 +3,11 @@
 
 use crate::*;
 
-/// The two-element boolean algebra and field with `bool` elements.
+/// The two-element Boolean algebra and field with `bool` elements.
 pub const BB: TwoElementAlgebra = TwoElementAlgebra();
 
-/// A two-element algebra on the set {0,1} which can be a boolean lattice,
-/// abelian group or field.
+/// A two-element algebra on the set {0, 1} that can be a Boolean lattice,
+/// abelian group, or field.
 #[derive(Clone, Debug)]
 pub struct TwoElementAlgebra();
 
@@ -53,7 +53,7 @@ impl Monoid for TwoElementAlgebra {
     }
 }
 
-impl CommuntativeMonoid for TwoElementAlgebra {
+impl CommutativeMonoid for TwoElementAlgebra {
     fn zero(&self) -> Self::Elem {
         false
     }

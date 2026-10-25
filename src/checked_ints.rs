@@ -33,8 +33,8 @@ pub const I64: CheckedInts<i64> = CheckedInts {
 
 /// The set of integers whose elements are stored in a primitive signed
 /// integer type. This structure is functionally equivalent to the set
-/// of all integers, but some operations are going to panic if the
-/// mathematical result cannot be represented in the primitive type.
+/// of all integers, but some operations panic if the mathematical result
+/// cannot be represented in the primitive type.
 /// The lattice order is the normal total order, which is not bounded.
 #[derive(Clone, Debug)]
 pub struct CheckedInts<E>
@@ -89,7 +89,7 @@ where
     }
 }
 
-impl<E> CommuntativeMonoid for CheckedInts<E>
+impl<E> CommutativeMonoid for CheckedInts<E>
 where
     E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
 {
@@ -120,7 +120,7 @@ where
 
     fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
         let num: Option<Self::Elem> = num.try_into().ok();
-        elem.checked_mul(&num.expect("too large value")).unwrap()
+        elem.checked_mul(&num.expect("value is too large")).unwrap()
     }
 }
 
