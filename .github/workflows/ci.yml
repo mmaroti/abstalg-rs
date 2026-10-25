@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install stable Rust
+        run: rustup toolchain install stable --profile minimal
+      - name: Test
+        run: cargo +stable test
+      - name: Test release
+        run: cargo +stable test --release
+      - name: Build documentation
+        run: cargo +stable doc --no-deps
