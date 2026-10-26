@@ -59,6 +59,47 @@ where
             Some(elem[elem.len() - 1].clone())
         }
     }
+
+    /// Returns the formal derivative, with coefficient `i * a_i` at degree `i - 1`.
+    pub fn derivative(&self, elem: &[A::Elem]) -> Vec<A::Elem> {
+        let mut deriv = Vec::new();
+        for (i, coef) in elem.iter().enumerate().skip(1) {
+            deriv.push(CommutativeMonoid::times(&self.base, i, coef));
+        }
+        while deriv.last().map_or(false, |coef| self.base.is_zero(coef)) {
+            deriv.pop();
+        }
+        deriv
+    }
+
+    /// Evaluates the polynomial at the given point using Horner's method.
+    pub fn evaluate(&self, elem: &[A::Elem], point: &A::Elem) -> A::Elem
+    where
+        A: UnitaryRing,
+    {
+        let mut result = self.base.zero();
+        for coef in elem.iter().rev() {
+            result = self.base.mul(&result, point);
+            self.base.add_assign(&mut result, coef);
+        }
+        result
+    }
+
+    /// Returns `elem1(elem2(x))` using Horner's method.
+    #[allow(clippy::ptr_arg)]
+    pub fn compose(&self, elem1: &Vec<A::Elem>, elem2: &Vec<A::Elem>) -> Vec<A::Elem>
+    where
+        A: UnitaryRing,
+    {
+        let mut result = self.zero();
+        for coef in elem1.iter().rev() {
+            result = self.mul(&result, elem2);
+            if !self.base.is_zero(coef) {
+                self.add_assign(&mut result, &vec![coef.clone()]);
+            }
+        }
+        result
+    }
 }
 
 impl<A> Domain for PolynomialAlgebra<A>
@@ -303,6 +344,37 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn compose() {
+        let ring = PolynomialAlgebra::new(I32);
+        let poly = vec![1, -2, 3];
+        assert_eq!(ring.compose(&poly, &vec![1, 1]), vec![2, 4, 3]);
+        assert_eq!(ring.compose(&poly, &vec![]), vec![1]);
+        assert_eq!(ring.compose(&vec![], &poly), vec![]);
+        assert_eq!(ring.compose(&vec![-1, 1], &vec![1]), vec![]);
+    }
+
+    #[test]
+    fn evaluate_composition() {
+        let ring = PolynomialAlgebra::new(PolynomialAlgebra::new(I32));
+        // Substitute 1 + x into 1 - 2y + 3y^2.
+        let poly = vec![vec![1], vec![-2], vec![3]];
+        assert_eq!(ring.evaluate(&poly, &vec![1, 1]), vec![2, 4, 3]);
+    }
+
+    #[test]
+    fn derivative() {
+        let ring = PolynomialAlgebra::new(I32);
+        assert_eq!(ring.derivative(&[]), vec![]);
+        assert_eq!(ring.derivative(&[7]), vec![]);
+        assert_eq!(ring.derivative(&[1, -2, 3]), vec![-2, 6]);
+
+        let ring = PolynomialAlgebra::new(GF2);
+        assert_eq!(ring.derivative(&[1, 1, 1]), vec![1]);
+        assert_eq!(ring.derivative(&[0, 0, 1]), vec![]);
+        assert_eq!(ring.derivative(&[0, 0, 0, 1]), vec![0, 0, 1]);
+    }
 
     #[test]
     fn try_inv() {

@@ -106,9 +106,6 @@ pub trait CommutativeMonoid: Domain {
     }
 }
 
-/// Compatibility alias for the original spelling of [`CommutativeMonoid`].
-pub use CommutativeMonoid as CommuntativeMonoid;
-
 /// An arbitrary (multiplicative) group, which is a monoid where every element
 /// has an inverse. Typical examples are the additive groups of rings and the
 /// multiplicative groups of their invertible elements.
