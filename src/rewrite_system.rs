@@ -20,6 +20,7 @@ pub struct RewriteSystem {
 impl RewriteSystem {
     /// Adds a new operation symbol to this rewrite system.
     pub fn add_operation(&mut self, name: &'static str, arity: usize) {
+        assert!(arity <= isize::MAX as usize);
         assert!(self.signature.iter().all(|(n, _)| *n != name));
         self.signature.push((name, arity));
     }
@@ -37,14 +38,14 @@ impl RewriteSystem {
     /// term fragment. If there is no valid initial segment, then None is
     /// returned.
     pub fn get_length(&self, fragment: &[i32]) -> Option<NonZeroUsize> {
-        let mut missing = 1;
+        let mut missing = 1usize;
         for (n, &a) in fragment.iter().enumerate() {
             if a < 0 {
                 let op = -(a + 1) as usize;
                 if op >= self.signature.len() {
                     return None;
                 }
-                missing += self.signature[op].1;
+                missing = missing.checked_add(self.signature[op].1)?;
             }
             if missing <= 1 {
                 return NonZeroUsize::new(n + 1);
@@ -68,9 +69,9 @@ impl RewriteSystem {
     /// integer such that all variables of the term are smaller than this
     /// value.
     pub fn num_variables(&self, term: &[i32]) -> usize {
-        let mut num = -1;
+        let mut num = -1isize;
         for &s in term {
-            num = std::cmp::max(num, s);
+            num = std::cmp::max(num, s as isize);
         }
         num.wrapping_add(1) as usize
     }
@@ -81,14 +82,14 @@ impl RewriteSystem {
         let mut num = 0;
         for &s in term {
             if s >= 0 {
-                match s.cmp(&num) {
+                match (s as usize).cmp(&num) {
                     Ordering::Greater => return None,
                     Ordering::Equal => num += 1,
                     Ordering::Less => (),
                 }
             }
         }
-        Some(num as usize)
+        Some(num)
     }
 
     /// Checks if the given term is a variable, and returns its index.
@@ -179,18 +180,14 @@ impl RewriteSystem {
         debug_assert!(!rule.is_empty() && !term.is_empty());
         let mut substitution = vec![];
         if let Some((len1, len2)) = self.match_rule_helper(rule, term, &mut substitution) {
-            debug_assert!(len1.get() == rule.len() && len2.get() == term.len());
+            debug_assert!(len1.get() == term.len() && len2.get() == rule.len());
             Some(substitution)
         } else {
             None
         }
     }
 
-    fn is_reduced_helper<'a>(
-        &self,
-        term: &'a [i32],
-        temp: &mut Vec<Option<&'a [i32]>>,
-    ) -> bool {
+    fn is_reduced_helper<'a>(&self, term: &'a [i32], temp: &mut Vec<Option<&'a [i32]>>) -> bool {
         if let Some((_, subterms)) = self.is_operation(term) {
             for t in subterms {
                 if !self.is_reduced_helper(t, temp) {
@@ -202,14 +199,14 @@ impl RewriteSystem {
             let left = &rule.left;
             temp.clear();
             if let Some((len1, len2)) = self.match_rule_helper(left, term, temp) {
-                debug_assert!(len1.get() == left.len() && len2.get() == term.len());
+                debug_assert!(len1.get() == term.len() && len2.get() == left.len());
                 return false;
             }
         }
         true
     }
 
-    /// Returns true if the given term is fully reduced.
+    /// Returns true if the given valid term is fully reduced.
     pub fn is_reduced(&self, term: &[i32]) -> bool {
         let mut temp = vec![];
         self.is_reduced_helper(term, &mut temp)
@@ -235,7 +232,7 @@ impl Domain for RewriteSystem {
     type Elem = Vec<i32>;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.is_reduced(elem)
+        self.is_valid(elem) && self.is_reduced(elem)
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
@@ -259,10 +256,70 @@ mod tests {
     use super::*;
 
     #[test]
+    fn term_validation() {
+        let mut system = RewriteSystem::default();
+        system.add_operation("mul", 2);
+        system.add_operation("one", 0);
+        assert_eq!(system.get_length(&[-1, 0, 1, 2]), NonZeroUsize::new(3));
+        assert!(system.contains(&vec![-1, 0, 1]));
+        assert!(system.contains(&vec![-2]));
+        for term in [
+            vec![],
+            vec![-1],
+            vec![-3],
+            vec![i32::MIN],
+            vec![0, 1],
+            vec![-2, 0],
+        ] {
+            assert!(!system.is_valid(&term));
+            assert!(!system.contains(&term));
+        }
+        assert_eq!(system.num_variables(&[-2]), 0);
+        assert_eq!(system.num_variables(&[i32::MAX]), i32::MAX as usize + 1);
+        assert_eq!(system.is_ascending(&[-1, 0, 0]), Some(1));
+        assert_eq!(system.is_ascending(&[-1, 1, 0]), None);
+    }
+
+    #[test]
+    fn arity_overflow() {
+        let mut system = RewriteSystem::default();
+        system.add_operation("huge", isize::MAX as usize);
+        system.add_operation("four", 4);
+        assert_eq!(system.get_length(&[-1]), None);
+        assert!(!system.contains(&vec![-1]));
+        // Individually permitted arities overflow when accumulated.
+        assert_eq!(system.get_length(&[-1, -1, -2]), None);
+        assert!(!system.is_valid(&[-1, -1, -2]));
+        assert!(!system.contains(&vec![-1, -1, -2]));
+    }
+
+    #[test]
+    fn matching_and_substitution() {
+        let mut system = RewriteSystem::default();
+        system.add_operation("mul", 2);
+        let pattern = [-1, 0, 0];
+        let term = [-1, -1, 1, 2, -1, 1, 2];
+        let substitution = system.match_rule(&pattern, &term).unwrap();
+        assert_eq!(substitution, vec![Some(&term[1..4])]);
+        assert_eq!(system.substitute(&pattern, &substitution), term);
+        assert!(system
+            .match_rule(&pattern, &[-1, -1, 1, 2, -1, 2, 1])
+            .is_none());
+    }
+
+    #[test]
     fn free_semigroup() {
         let mut system: RewriteSystem = Default::default();
         system.add_operation("mul", 2);
-        system.add_rule(vec![-1, -1, 0, 1, 2], vec![-1, 0, -1, 1, 2]);
-        assert!(system.is_ascending(&[-1, -1, 0, 1, 1]).is_some());
+        let left = vec![-1, -1, 0, 1, 2];
+        let right = vec![-1, 0, -1, 1, 2];
+        system.add_rule(left.clone(), right.clone());
+        let term = vec![-1, -1, 3, 4, -1, 5, 6];
+        let substitution = system.match_rule(&left, &term).unwrap();
+        let result = system.substitute(&right, &substitution);
+        assert_eq!(result, vec![-1, 3, -1, 4, -1, 5, 6]);
+        assert!(!system.contains(&term));
+        assert!(system.contains(&result));
+        assert!(!system.contains(&vec![-1, 3, -1, -1, 4, 5, 6]));
     }
 }
