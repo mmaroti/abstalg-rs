@@ -4,10 +4,10 @@
 use crate::*;
 
 /// The divisibility partial order of an integral domain where the elements
-/// are the unique representatives of associate classes, the largest element
-/// is zero, the smallest element is one. If the domain is Euclidean, this is
+/// are the unique representatives of associate classes. The largest element
+/// is zero, and the smallest element is one. If the domain is Euclidean, this is
 /// a bounded distributive lattice where the meet is the greatest common
-/// divisor, the join is the least common multiple.
+/// divisor and the join is the least common multiple.
 #[derive(Clone, Debug)]
 pub struct DivisibilityOrder<A>
 where
@@ -22,7 +22,7 @@ impl<A: IntegralDomain> DivisibilityOrder<A> {
         Self { base }
     }
 
-    /// Returns the base ring from which this lattice was constructed.
+    /// Returns the base ring from which this order was constructed.
     pub fn base(&self) -> &A {
         &self.base
     }
@@ -32,7 +32,8 @@ impl<A: IntegralDomain> Domain for DivisibilityOrder<A> {
     type Elem = A::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.base.is_zero(elem) || self.base.is_one(&self.base.associate_coef(elem))
+        self.base.contains(elem)
+            && (self.base.is_zero(elem) || self.base.is_one(&self.base.associate_coef(elem)))
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
@@ -73,6 +74,16 @@ impl<A: EuclideanDomain> DistributiveLattice for DivisibilityOrder<A> {}
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn contains() {
+        let lat = DivisibilityOrder::new(PolynomialAlgebra::new(ZZ));
+        assert!(lat.contains(&vec![]));
+        assert!(lat.contains(&vec![ZZ.one()]));
+        assert!(!lat.contains(&vec![ZZ.zero()]));
+        assert!(!lat.contains(&vec![ZZ.one(), ZZ.zero()]));
+        assert!(!lat.contains(&vec![ZZ.int(-1)]));
+    }
 
     #[test]
     fn order() {

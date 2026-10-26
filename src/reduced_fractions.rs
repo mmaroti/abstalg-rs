@@ -4,12 +4,12 @@
 use crate::*;
 use num::rational::Ratio;
 
-/// The field of rational numbers with arbitrary large values.
+/// The field of rational numbers with arbitrarily large values.
 pub const QQ: ReducedFractions<Integers> = ReducedFractions { base: Integers() };
 
-/// The field of fractions over the elements of an Euclidean domain. The
-/// elements are ratios where the numerator and denominator are relative
-/// primes and the denominator is normalized with respect to its associate
+/// The field of fractions over the elements of a Euclidean domain. The
+/// elements are ratios where the numerator and denominator are relatively
+/// prime and the denominator is normalized with respect to its associate
 /// class.
 #[derive(Clone, Debug)]
 pub struct ReducedFractions<A>
@@ -24,7 +24,7 @@ where
     A: EuclideanDomain,
 {
     /// Creates a new field of fractions over the given ring. The ring cannot
-    /// be trivial, that is one must be different from zero.
+    /// be trivial; that is, one must be different from zero.
     pub fn new(base: A) -> Self {
         assert!(!base.is_zero(&base.one()));
         Self { base }
@@ -58,8 +58,11 @@ where
     type Elem = Ratio<A::Elem>;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.base.relative_primes(elem.numer(), elem.denom())
+        self.base.contains(elem.numer())
+            && self.base.contains(elem.denom())
+            && !self.base.is_zero(elem.denom())
             && self.base.is_one(&self.base.associate_coef(elem.denom()))
+            && self.base.relative_primes(elem.numer(), elem.denom())
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
@@ -92,7 +95,12 @@ where
     fn is_one(&self, elem: &Self::Elem) -> bool {
         self.base.is_one(elem.numer()) && self.base.is_one(elem.denom())
     }
+}
 
+impl<A> InvertibleMonoid for ReducedFractions<A>
+where
+    A: EuclideanDomain,
+{
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         if self.invertible(elem) {
             let elem = Self::Elem::new_raw(elem.denom().clone(), elem.numer().clone());
@@ -107,7 +115,7 @@ where
     }
 }
 
-impl<A> CommuntativeMonoid for ReducedFractions<A>
+impl<A> CommutativeMonoid for ReducedFractions<A>
 where
     A: EuclideanDomain,
 {
@@ -176,6 +184,22 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn contains() {
+        let field = ReducedFractions::new(I8);
+        assert!(field.contains(&Ratio::new_raw(1, 2)));
+        assert!(field.contains(&Ratio::new_raw(i8::MIN, 1)));
+        assert!(!field.contains(&Ratio::new_raw(1, 0)));
+        assert!(!field.contains(&Ratio::new_raw(i8::MIN, -1)));
+        assert!(!field.contains(&Ratio::new_raw(2, 4)));
+        assert!(!field.contains(&Ratio::new_raw(1, -2)));
+
+        let field = ReducedFractions::new(PolynomialAlgebra::new(GF2));
+        assert!(field.contains(&Ratio::new_raw(vec![0, 1], vec![1])));
+        assert!(!field.contains(&Ratio::new_raw(vec![0], vec![1])));
+        assert!(!field.contains(&Ratio::new_raw(vec![1], vec![1, 0])));
+    }
 
     #[test]
     fn ops() {

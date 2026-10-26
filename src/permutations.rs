@@ -3,19 +3,20 @@
 
 use crate::*;
 
-/// The group of permutations on a sized set.
+/// The group of permutations on a set of fixed size. Each permutation is
+/// represented by a vector of `u32` values.
 #[derive(Clone, Debug)]
 pub struct Permutations {
     size: u32,
 }
 
-/// The group of permutations on a set of fixed size. Each permutation is
-/// represented by a vector of u32 values.
 impl Permutations {
+    /// Creates a new permutation group on a set of the given size.
     pub fn new(size: u32) -> Self {
         Permutations { size }
     }
 
+    /// Returns the number of elements in the set being permuted.
     pub fn size(&self) -> u32 {
         self.size
     }
@@ -30,7 +31,7 @@ impl Domain for Permutations {
         } else {
             let mut used = vec![false; self.size as usize];
             for &a in elem.iter() {
-                if used[a as usize] {
+                if a >= self.size || used[a as usize] {
                     return false;
                 }
                 used[a as usize] = true;
@@ -82,7 +83,9 @@ impl Monoid for Permutations {
         }
         true
     }
+}
 
+impl InvertibleMonoid for Permutations {
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         debug_assert_eq!(elem.len(), self.size as usize);
         let mut inv = vec![0; self.size as usize];
@@ -102,6 +105,16 @@ impl Group for Permutations {}
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn contains() {
+        let group = Permutations::new(2);
+        assert!(group.contains(&vec![1, 0]));
+        assert!(!group.contains(&vec![]));
+        assert!(!group.contains(&vec![0, 0]));
+        assert!(!group.contains(&vec![0, 2]));
+        assert!(!group.contains(&vec![0, u32::MAX]));
+    }
 
     #[test]
     fn s4() {

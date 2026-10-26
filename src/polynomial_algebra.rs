@@ -5,10 +5,17 @@ use crate::*;
 
 /// The ring of polynomials over a base ring or field where each element
 /// is represented as a vector whose last element, the leading coefficient (if
-/// any) must be non-zero. This means that the empty vector is the zero
+/// any), must be non-zero. This means that the empty vector is the zero
 /// element, and every polynomial has a unique representation. Polynomials
 /// can be defined over any abelian group, though only the group operations
 /// will be available.
+/// Inversion is available only when the base is an integral domain.
+///
+/// ```compile_fail
+/// use abstalg::*;
+/// let ring = PolynomialAlgebra::new(QuotientRing::new(I32, 4));
+/// ring.try_inv(&vec![1, 2]);
+/// ```
 #[derive(Clone, Debug)]
 pub struct PolynomialAlgebra<A>
 where
@@ -26,7 +33,7 @@ where
         Self { base }
     }
 
-    /// Returns the base ring from which this ring was created.
+    /// Returns the base algebra from which this polynomial algebra was created.
     pub fn base(&self) -> &A {
         &self.base
     }
@@ -51,6 +58,47 @@ where
         } else {
             Some(elem[elem.len() - 1].clone())
         }
+    }
+
+    /// Returns the formal derivative, with coefficient `i * a_i` at degree `i - 1`.
+    pub fn derivative(&self, elem: &[A::Elem]) -> Vec<A::Elem> {
+        let mut deriv = Vec::new();
+        for (i, coef) in elem.iter().enumerate().skip(1) {
+            deriv.push(CommutativeMonoid::times(&self.base, i, coef));
+        }
+        while deriv.last().map_or(false, |coef| self.base.is_zero(coef)) {
+            deriv.pop();
+        }
+        deriv
+    }
+
+    /// Evaluates the polynomial at the given point using Horner's method.
+    pub fn evaluate(&self, elem: &[A::Elem], point: &A::Elem) -> A::Elem
+    where
+        A: UnitaryRing,
+    {
+        let mut result = self.base.zero();
+        for coef in elem.iter().rev() {
+            result = self.base.mul(&result, point);
+            self.base.add_assign(&mut result, coef);
+        }
+        result
+    }
+
+    /// Returns `elem1(elem2(x))` using Horner's method.
+    #[allow(clippy::ptr_arg)]
+    pub fn compose(&self, elem1: &Vec<A::Elem>, elem2: &Vec<A::Elem>) -> Vec<A::Elem>
+    where
+        A: UnitaryRing,
+    {
+        let mut result = self.zero();
+        for coef in elem1.iter().rev() {
+            result = self.mul(&result, elem2);
+            if !self.base.is_zero(coef) {
+                self.add_assign(&mut result, &vec![coef.clone()]);
+            }
+        }
+        result
     }
 }
 
@@ -101,6 +149,9 @@ where
                     elem3[i + j] = self.base.add(&elem3[i + j], &a);
                 }
             }
+            while elem3.last().map_or(false, |elem| self.base.is_zero(elem)) {
+                elem3.pop();
+            }
             elem3
         }
     }
@@ -118,7 +169,12 @@ where
     fn is_one(&self, elem: &Self::Elem) -> bool {
         elem.len() == 1 && self.base.is_one(&elem[0])
     }
+}
 
+impl<A> InvertibleMonoid for PolynomialAlgebra<A>
+where
+    A: IntegralDomain,
+{
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         if elem.len() == 1 {
             if let Some(elem) = self.base.try_inv(&elem[0]) {
@@ -129,7 +185,7 @@ where
     }
 }
 
-impl<A> CommuntativeMonoid for PolynomialAlgebra<A>
+impl<A> CommutativeMonoid for PolynomialAlgebra<A>
 where
     A: AbelianGroup,
 {
@@ -290,17 +346,70 @@ mod tests {
     use super::*;
 
     #[test]
+    fn compose() {
+        let ring = PolynomialAlgebra::new(I32);
+        let poly = vec![1, -2, 3];
+        assert_eq!(ring.compose(&poly, &vec![1, 1]), vec![2, 4, 3]);
+        assert_eq!(ring.compose(&poly, &vec![]), vec![1]);
+        assert_eq!(ring.compose(&vec![], &poly), vec![]);
+        assert_eq!(ring.compose(&vec![-1, 1], &vec![1]), vec![]);
+    }
+
+    #[test]
+    fn evaluate_composition() {
+        let ring = PolynomialAlgebra::new(PolynomialAlgebra::new(I32));
+        // Substitute 1 + x into 1 - 2y + 3y^2.
+        let poly = vec![vec![1], vec![-2], vec![3]];
+        assert_eq!(ring.evaluate(&poly, &vec![1, 1]), vec![2, 4, 3]);
+    }
+
+    #[test]
+    fn derivative() {
+        let ring = PolynomialAlgebra::new(I32);
+        assert_eq!(ring.derivative(&[]), vec![]);
+        assert_eq!(ring.derivative(&[7]), vec![]);
+        assert_eq!(ring.derivative(&[1, -2, 3]), vec![-2, 6]);
+
+        let ring = PolynomialAlgebra::new(GF2);
+        assert_eq!(ring.derivative(&[1, 1, 1]), vec![1]);
+        assert_eq!(ring.derivative(&[0, 0, 1]), vec![]);
+        assert_eq!(ring.derivative(&[0, 0, 0, 1]), vec![0, 0, 1]);
+    }
+
+    #[test]
+    fn try_inv() {
+        let ring = PolynomialAlgebra::new(I32);
+        assert_eq!(ring.try_inv(&vec![1]), Some(vec![1]));
+        assert_eq!(ring.try_inv(&vec![-1]), Some(vec![-1]));
+        assert_eq!(ring.try_inv(&vec![2]), None);
+        assert_eq!(ring.try_inv(&vec![]), None);
+        assert_eq!(ring.try_inv(&vec![0, 1]), None);
+    }
+
+    #[test]
+    fn mul_zero_divisors() {
+        let ring = PolynomialAlgebra::new(QuotientRing::new(I32, 4));
+
+        let elem = vec![0, 2];
+        assert_eq!(ring.mul(&elem, &elem), ring.zero());
+
+        let elem = vec![1, 2];
+        assert_eq!(ring.mul(&elem, &elem), ring.one());
+        assert_eq!(ring.mul(&elem, &vec![0, 2]), vec![0, 2]);
+    }
+
+    #[test]
     fn field_256() {
         let field1 = QuotientField::new(I32, 2);
         let ring = PolynomialAlgebra::new(field1);
 
-        // the irreducible polynomial 1 + x + x^3 + x^4 + x^8
+        // The irreducible polynomial 1 + x + x^3 + x^4 + x^8.
         let poly = vec![1, 1, 0, 1, 1, 0, 0, 0, 1];
         assert!(ring.contains(&poly));
         assert_eq!(ring.degree(&poly), Some(8));
         let field2 = QuotientField::new(ring, poly);
 
-        // 1 + x, primitive element, generate all 256 elements
+        // Use the primitive element 1 + x to generate all nonzero elements.
         let gen = vec![1, 1];
         let mut elems = Vec::new();
         elems.push(field2.zero());

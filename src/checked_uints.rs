@@ -33,9 +33,9 @@ pub const U64: CheckedUints<u64> = CheckedUints {
 
 /// The set of natural numbers whose elements are stored in a primitive
 /// unsigned integer type. This structure is functionally equivalent to the
-/// set of all natural numbers, but some operations are going to panic if the
-/// mathematical result cannot be represented in the primitive type. The
-/// lattice order is the normal total order, which is not upper bounded.
+/// set of all natural numbers, but some operations panic if the mathematical
+/// result cannot be represented in the primitive type. The
+/// lattice order is the normal total order, which is not bounded above.
 #[derive(Clone, Debug)]
 pub struct CheckedUints<E>
 where
@@ -75,7 +75,12 @@ where
     fn is_one(&self, elem: &Self::Elem) -> bool {
         *elem == 1.into()
     }
+}
 
+impl<E> InvertibleMonoid for CheckedUints<E>
+where
+    E: PrimInt + Unsigned + Debug + From<u8> + TryFrom<usize>,
+{
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         if *elem == 1.into() {
             Some(1.into())
@@ -89,7 +94,7 @@ where
     }
 }
 
-impl<E> CommuntativeMonoid for CheckedUints<E>
+impl<E> CommutativeMonoid for CheckedUints<E>
 where
     E: PrimInt + Unsigned + Debug + From<u8> + TryFrom<usize>,
 {
@@ -133,4 +138,18 @@ where
 impl<E> DistributiveLattice for CheckedUints<E> where
     E: PrimInt + Unsigned + Debug + From<u8> + TryFrom<usize>
 {
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn times_avoids_unused_overflow() {
+        assert_eq!(CommutativeMonoid::times(&U8, 0, &255), 0);
+        assert_eq!(CommutativeMonoid::times(&U8, 1, &200), 200);
+        assert_eq!(CommutativeMonoid::times(&U8, 2, &100), 200);
+        assert_eq!(CommutativeMonoid::times(&U8, 3, &80), 240);
+        assert_eq!(CommutativeMonoid::times(&U8, 255, &1), 255);
+    }
 }

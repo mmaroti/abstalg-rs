@@ -4,18 +4,18 @@
 use crate::*;
 
 /// The multiplicative group of a unitary ring or field, or more generally
-/// the group of invertible elements of any monoid.
+/// the group of invertible elements of a monoid with computable inverses.
 #[derive(Clone, Debug)]
 pub struct MultiplicativeGroup<A>
 where
-    A: Monoid,
+    A: InvertibleMonoid,
 {
     base: A,
 }
 
 impl<A> MultiplicativeGroup<A>
 where
-    A: Monoid,
+    A: InvertibleMonoid,
 {
     /// Creates a new multiplicative group from the given base.
     pub fn new(base: A) -> Self {
@@ -30,12 +30,12 @@ where
 
 impl<A> Domain for MultiplicativeGroup<A>
 where
-    A: Monoid,
+    A: InvertibleMonoid,
 {
     type Elem = A::Elem;
 
     fn contains(&self, elem: &Self::Elem) -> bool {
-        self.base.invertible(elem)
+        self.base.contains(elem) && self.base.invertible(elem)
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
@@ -45,7 +45,7 @@ where
 
 impl<A> Semigroup for MultiplicativeGroup<A>
 where
-    A: Monoid,
+    A: InvertibleMonoid,
 {
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         self.base.mul(elem1, elem2)
@@ -62,7 +62,7 @@ where
 
 impl<A> Monoid for MultiplicativeGroup<A>
 where
-    A: Monoid,
+    A: InvertibleMonoid,
 {
     fn one(&self) -> Self::Elem {
         self.base.one()
@@ -71,7 +71,12 @@ where
     fn is_one(&self, elem: &Self::Elem) -> bool {
         self.base.is_one(elem)
     }
+}
 
+impl<A> InvertibleMonoid for MultiplicativeGroup<A>
+where
+    A: InvertibleMonoid,
+{
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         self.base.try_inv(elem)
     }
@@ -83,9 +88,23 @@ where
 
 impl<A> Group for MultiplicativeGroup<A>
 where
-    A: Monoid,
+    A: InvertibleMonoid,
 {
     fn inv(&self, elem: &Self::Elem) -> Self::Elem {
         self.base.try_inv(elem).unwrap()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn contains() {
+        let group = MultiplicativeGroup::new(Permutations::new(2));
+        assert!(group.contains(&vec![1, 0]));
+        assert!(!group.contains(&vec![0]));
+        assert!(!group.contains(&vec![0, 0]));
+        assert!(!group.contains(&vec![0, 2]));
     }
 }

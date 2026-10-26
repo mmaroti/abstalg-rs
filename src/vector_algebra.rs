@@ -3,8 +3,8 @@
 
 use crate::*;
 
-/// The direct power of the given algebra where the elements are fixed sized
-/// vectors. The algebraic operations are always acting coordinate-wise.
+/// The direct power of the given algebra, whose elements are vectors of a fixed
+/// size. The algebraic operations act coordinate-wise.
 #[derive(Clone, Debug)]
 pub struct VectorAlgebra<A>
 where
@@ -103,7 +103,12 @@ where
         assert!(elem.len() == self.len);
         elem.iter().all(|x| self.base.is_one(x))
     }
+}
 
+impl<A> InvertibleMonoid for VectorAlgebra<A>
+where
+    A: InvertibleMonoid,
+{
     fn try_inv(&self, elem: &Self::Elem) -> Option<Self::Elem> {
         assert!(elem.len() == self.len);
         let mut v = Vec::with_capacity(self.len);
@@ -133,9 +138,9 @@ where
     }
 }
 
-impl<A> CommuntativeMonoid for VectorAlgebra<A>
+impl<A> CommutativeMonoid for VectorAlgebra<A>
 where
-    A: CommuntativeMonoid,
+    A: CommutativeMonoid,
 {
     fn zero(&self) -> Self::Elem {
         self.diagonal(self.base.zero())
