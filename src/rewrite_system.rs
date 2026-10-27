@@ -3,6 +3,7 @@
 
 use crate::*;
 use std::cmp::Ordering;
+use std::convert::TryFrom;
 use std::num::NonZeroUsize;
 
 #[derive(Clone, Debug)]
@@ -283,6 +284,49 @@ impl RewriteSystem {
         Some(substitution)
     }
 
+    /// Returns two distinct reduced terms witnessing nonconfluence, or None
+    /// if the system is confluent. The caller must ensure that the rules terminate.
+    pub fn is_confluent(&self) -> Option<(Vec<i32>, Vec<i32>)> {
+        for rule1 in &self.rules {
+            let offset = i32::try_from(self.num_variables(&rule1.left)).unwrap();
+            let rename = |term: &[i32]| {
+                term.iter()
+                    .map(|&s| {
+                        if s < 0 {
+                            s
+                        } else {
+                            s.checked_add(offset).unwrap()
+                        }
+                    })
+                    .collect::<Vec<_>>()
+            };
+            for rule2 in &self.rules {
+                let left2 = rename(&rule2.left);
+                let right2 = rename(&rule2.right);
+                for (pos, &s) in rule1.left.iter().enumerate() {
+                    if s >= 0 {
+                        continue;
+                    }
+                    let len = self.get_length(&rule1.left[pos..]).unwrap().get();
+                    if let Some(substitution) = self.unify(&rule1.left[pos..pos + len], &left2) {
+                        let refs: Vec<_> = substitution.iter().map(Vec::as_slice).collect();
+                        let left = self.substitute(&rule1.right, &refs);
+                        let mut right = rule1.left[..pos].to_vec();
+                        right.extend_from_slice(&right2);
+                        right.extend_from_slice(&rule1.left[pos + len..]);
+                        let right = self.substitute(&right, &refs);
+                        let left = self.rewrite(&left);
+                        let right = self.rewrite(&right);
+                        if left != right {
+                            return Some((left, right));
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
     /// Evaluates a valid term with fully reduced substitution values, keeping
     /// variables whose indices are outside the substitution.
     fn evaluate_helper(&self, term: &[i32], substitution: &[&[i32]]) -> Vec<i32> {
@@ -402,8 +446,14 @@ mod tests {
         let term = [-1, 0, i32::MAX];
         assert_eq!(system.substitute(&term, &[]), term);
         assert_eq!(system.substitute(&term, &[&[1]]), vec![-1, 1, i32::MAX]);
-        assert_eq!(system.evaluate_helper(&term, &[&[1]]), vec![-1, 1, i32::MAX]);
-        assert_eq!(system.substitute(&[-1, 0, 1], &[&[1], &[2]]), vec![-1, 1, 2]);
+        assert_eq!(
+            system.evaluate_helper(&term, &[&[1]]),
+            vec![-1, 1, i32::MAX]
+        );
+        assert_eq!(
+            system.substitute(&[-1, 0, 1], &[&[1], &[2]]),
+            vec![-1, 1, 2]
+        );
     }
 
     #[test]
@@ -418,8 +468,14 @@ mod tests {
         let substitution = system.unify(&left, &right).unwrap();
         assert_eq!(substitution, vec![vec![-3, -2], vec![-2]]);
         let refs: Vec<_> = substitution.iter().map(Vec::as_slice).collect();
-        assert_eq!(system.substitute(&left, &refs), system.substitute(&right, &refs));
-        assert_eq!(system.unify(&[-2], &[2]), Some(vec![vec![0], vec![1], vec![-2]]));
+        assert_eq!(
+            system.substitute(&left, &refs),
+            system.substitute(&right, &refs)
+        );
+        assert_eq!(
+            system.unify(&[-2], &[2]),
+            Some(vec![vec![0], vec![1], vec![-2]])
+        );
         assert_eq!(system.unify(&[i32::MAX], &[i32::MAX]), Some(vec![]));
         assert_eq!(system.unify(&[-1, 0, 1], &[-1, 1, 0]), Some(vec![vec![1]]));
         assert_eq!(system.unify(&[-2], &[-3, 0]), None);
@@ -466,6 +522,28 @@ mod tests {
     }
 
     #[test]
+    fn confluence() {
+        let mut system = RewriteSystem::default();
+        system.add_operation("f", 1);
+        system.add_operation("g", 1);
+        system.add_operation("h", 1);
+        assert_eq!(system.is_confluent(), None);
+        system.add_rule(vec![-1, -1, 0], vec![-2, 0]);
+        // The self-overlap at f(f(f(x))) reduces in two different ways.
+        assert_eq!(
+            system.is_confluent(),
+            Some((vec![-2, -1, 1], vec![-1, -2, 1]))
+        );
+        system.add_rule(vec![-2, -1, 0], vec![-1, -2, 0]);
+        assert_eq!(system.is_confluent(), None);
+        // Distinct rules can also conflict at the root.
+        system.add_rule(vec![-1, -1, 0], vec![-3, 0]);
+        let (left, right) = system.is_confluent().unwrap();
+        assert_ne!(left, right);
+        assert!(system.contains(&left) && system.contains(&right));
+    }
+
+    #[test]
     fn free_semigroup() {
         let mut system: RewriteSystem = Default::default();
         system.add_operation("mul", 2);
@@ -483,5 +561,6 @@ mod tests {
             system.evaluate2(0, &vec![-1, 3, -1, 4, 5], &vec![-1, 6, 7]),
             vec![-1, 3, -1, 4, -1, 5, -1, 6, 7]
         );
+        assert_eq!(system.is_confluent(), None);
     }
 }
