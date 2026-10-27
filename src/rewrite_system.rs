@@ -26,9 +26,11 @@ impl RewriteSystem {
     }
 
     /// Adds a new rewrite rule to the rewrite system. The left term must be
-    /// ascending, and all variables of the right one must appear in the left.
+    /// operation-rooted and ascending, and all variables of the right one must
+    /// appear in the left.
     pub fn add_rule(&mut self, left: Vec<i32>, right: Vec<i32>) {
         assert!(self.is_valid(&left) && self.is_valid(&right));
+        assert!(left[0] < 0);
         let n = self.is_ascending(&left).unwrap();
         assert!(self.num_variables(&right) <= n);
         self.rules.push(Rule { left, right });
@@ -212,6 +214,19 @@ impl RewriteSystem {
         self.is_reduced_helper(term, &mut temp)
     }
 
+    /// Reduces a valid term using the identity substitution for its variables.
+    /// The caller must ensure that the rewrite rules terminate.
+    pub fn rewrite(&self, term: &[i32]) -> Vec<i32> {
+        debug_assert!(self.is_valid(term));
+        let mut substitution = vec![None; self.num_variables(term)];
+        for (i, &s) in term.iter().enumerate() {
+            if s >= 0 {
+                substitution[s as usize] = Some(&term[i..i + 1]);
+            }
+        }
+        self.evaluate_helper(term, &substitution)
+    }
+
     /// Replaces the variables in the term with the matching substitution.
     pub fn substitute(&self, term: &[i32], substitution: &[Option<&[i32]>]) -> Vec<i32> {
         let mut result = vec![];
@@ -226,6 +241,25 @@ impl RewriteSystem {
         }
         result
     }
+
+    /// Evaluates a valid term with fully reduced substitution values.
+    fn evaluate_helper(&self, term: &[i32], substitution: &[Option<&[i32]>]) -> Vec<i32> {
+        debug_assert!(self.is_valid(term));
+        debug_assert!(substitution
+            .iter()
+            .flatten()
+            .all(|t| self.is_valid(t) && self.is_reduced(t)));
+        if let Some(var) = self.is_variable(term) {
+            substitution[var].unwrap().to_vec()
+        } else {
+            let (oper, subterms) = self.is_operation(term).unwrap();
+            let elems: Vec<_> = subterms
+                .iter()
+                .map(|t| self.evaluate_helper(t, substitution))
+                .collect();
+            self.evaluate(oper, &elems.iter().collect::<Vec<_>>())
+        }
+    }
 }
 
 impl Domain for RewriteSystem {
@@ -236,6 +270,7 @@ impl Domain for RewriteSystem {
     }
 
     fn equals(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
+        debug_assert!(self.contains(elem1) && self.contains(elem2));
         elem1 == elem2
     }
 }
@@ -245,9 +280,21 @@ impl UniversalAlgebra for RewriteSystem {
         &self.signature
     }
 
+    /// Applies an operation to fully reduced arguments and returns a normal form.
+    /// The caller must ensure that the rewrite rules terminate.
     fn evaluate(&self, oper: usize, elems: &[&Self::Elem]) -> Self::Elem {
         assert!(oper < self.signature.len() && self.signature[oper].1 == elems.len());
-        vec![]
+        debug_assert!(elems.iter().all(|elem| self.contains(elem)));
+        let mut term = vec![-1 - oper as i32];
+        for elem in elems {
+            term.extend_from_slice(elem);
+        }
+        for rule in &self.rules {
+            if let Some(substitution) = self.match_rule(&rule.left, &term) {
+                return self.evaluate_helper(&rule.right, &substitution);
+            }
+        }
+        term
     }
 }
 
@@ -308,6 +355,38 @@ mod tests {
     }
 
     #[test]
+    fn rewrite() {
+        let mut system = RewriteSystem::default();
+        system.add_operation("mul", 2);
+        system.add_operation("one", 0);
+        system.add_rule(vec![-1, -1, 0, 1, 2], vec![-1, 0, -1, 1, 2]);
+        let term = [-1, -1, -1, 0, 1, 2, -1, -1, 3, 4, 5];
+        let result = system.rewrite(&term);
+        assert_eq!(result, vec![-1, 0, -1, 1, -1, 2, -1, 3, -1, 4, 5]);
+        assert!(system.contains(&result));
+        assert_eq!(system.rewrite(&result), result);
+        assert_eq!(system.rewrite(&[7]), vec![7]);
+        assert_eq!(system.rewrite(&[-2]), vec![-2]);
+    }
+
+    #[test]
+    fn evaluate() {
+        let mut system = RewriteSystem::default();
+        system.add_operation("f", 1);
+        system.add_operation("g", 1);
+        system.add_operation("h", 1);
+        system.add_operation("one", 0);
+        system.add_operation("alias", 0);
+        system.add_rule(vec![-1, 0], vec![-2, -3, 0]);
+        system.add_rule(vec![-3, 0], vec![0]);
+        system.add_rule(vec![-2, 0], vec![0]);
+        system.add_rule(vec![-5], vec![-4]);
+        // Both the child and head introduced by f's right side must reduce.
+        assert_eq!(system.evaluate1(0, &vec![0]), vec![0]);
+        assert_eq!(system.evaluate0(4), vec![-4]);
+    }
+
+    #[test]
     fn free_semigroup() {
         let mut system: RewriteSystem = Default::default();
         system.add_operation("mul", 2);
@@ -321,5 +400,9 @@ mod tests {
         assert!(!system.contains(&term));
         assert!(system.contains(&result));
         assert!(!system.contains(&vec![-1, 3, -1, -1, 4, 5, 6]));
+        assert_eq!(
+            system.evaluate2(0, &vec![-1, 3, -1, 4, 5], &vec![-1, 6, 7]),
+            vec![-1, 3, -1, 4, -1, 5, -1, 6, 7]
+        );
     }
 }
