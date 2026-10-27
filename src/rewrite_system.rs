@@ -235,6 +235,54 @@ impl RewriteSystem {
         result
     }
 
+    /// Returns a most general syntactic unifier of two valid terms, or None
+    /// if they cannot be unified. Missing substitution entries keep the variable;
+    /// supplied entries have all bindings applied to them.
+    pub fn unify(&self, term1: &[i32], term2: &[i32]) -> Option<Vec<Vec<i32>>> {
+        debug_assert!(self.is_valid(term1) && self.is_valid(term2));
+        // Consider BTreeMap if sparse variable indices cause performance problems.
+        let mut substitution: Vec<Vec<i32>> = vec![];
+        let mut pending = vec![(term1.to_vec(), term2.to_vec())];
+        while let Some((left, right)) = pending.pop() {
+            let refs: Vec<_> = substitution.iter().map(Vec::as_slice).collect();
+            let left = self.substitute(&left, &refs);
+            let right = self.substitute(&right, &refs);
+            if left == right {
+                continue;
+            }
+            if left[0] >= 0 || right[0] >= 0 {
+                let (var, term) = if left[0] >= 0 {
+                    (left[0], right)
+                } else {
+                    (right[0], left)
+                };
+                if term.contains(&var) {
+                    return None;
+                }
+                let var = var as usize;
+                while substitution.len() <= var {
+                    substitution.push(vec![substitution.len() as i32]);
+                }
+                substitution[var] = term;
+                let refs: Vec<_> = substitution.iter().map(Vec::as_slice).collect();
+                substitution = substitution
+                    .iter()
+                    .map(|term| self.substitute(term, &refs))
+                    .collect();
+            } else {
+                if left[0] != right[0] {
+                    return None;
+                }
+                let (_, left) = self.is_operation(&left).unwrap();
+                let (_, right) = self.is_operation(&right).unwrap();
+                for (left, right) in left.into_iter().zip(right).rev() {
+                    pending.push((left.to_vec(), right.to_vec()));
+                }
+            }
+        }
+        Some(substitution)
+    }
+
     /// Evaluates a valid term with fully reduced substitution values, keeping
     /// variables whose indices are outside the substitution.
     fn evaluate_helper(&self, term: &[i32], substitution: &[&[i32]]) -> Vec<i32> {
@@ -356,6 +404,28 @@ mod tests {
         assert_eq!(system.substitute(&term, &[&[1]]), vec![-1, 1, i32::MAX]);
         assert_eq!(system.evaluate_helper(&term, &[&[1]]), vec![-1, 1, i32::MAX]);
         assert_eq!(system.substitute(&[-1, 0, 1], &[&[1], &[2]]), vec![-1, 1, 2]);
+    }
+
+    #[test]
+    fn unify() {
+        let mut system = RewriteSystem::default();
+        system.add_operation("mul", 2);
+        system.add_operation("one", 0);
+        system.add_operation("f", 1);
+        // A later binding must also resolve variables in earlier bindings.
+        let left = [-1, 0, 1];
+        let right = [-1, -3, 1, -2];
+        let substitution = system.unify(&left, &right).unwrap();
+        assert_eq!(substitution, vec![vec![-3, -2], vec![-2]]);
+        let refs: Vec<_> = substitution.iter().map(Vec::as_slice).collect();
+        assert_eq!(system.substitute(&left, &refs), system.substitute(&right, &refs));
+        assert_eq!(system.unify(&[-2], &[2]), Some(vec![vec![0], vec![1], vec![-2]]));
+        assert_eq!(system.unify(&[i32::MAX], &[i32::MAX]), Some(vec![]));
+        assert_eq!(system.unify(&[-1, 0, 1], &[-1, 1, 0]), Some(vec![vec![1]]));
+        assert_eq!(system.unify(&[-2], &[-3, 0]), None);
+        assert_eq!(system.unify(&[-1, 0, 0], &[-1, -2, -3, 1]), None);
+        assert_eq!(system.unify(&[0], &[-3, 0]), None);
+        assert_eq!(system.unify(&[-1, 0, 1], &[-1, -3, 1, -3, 0]), None);
     }
 
     #[test]
