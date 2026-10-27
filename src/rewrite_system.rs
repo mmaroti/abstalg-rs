@@ -129,15 +129,13 @@ impl RewriteSystem {
         &self,
         rule_fragment: &[i32],
         term_fragment: &'a [i32],
-        subtitution: &mut Vec<Option<&'a [i32]>>,
+        substitution: &mut Vec<&'a [i32]>,
     ) -> Option<(NonZeroUsize, NonZeroUsize)> {
         debug_assert!(!rule_fragment.is_empty() && !term_fragment.is_empty());
         if rule_fragment[0] >= 0 {
             let var = rule_fragment[0] as usize;
-            if subtitution.len() <= var {
-                subtitution.resize(var + 1, None);
-            }
-            if let Some(t) = subtitution[var] {
+            debug_assert!(var <= substitution.len());
+            if let Some(&t) = substitution.get(var) {
                 if term_fragment.len() >= t.len() && term_fragment[..t.len()] == *t {
                     Some((
                         NonZeroUsize::new(t.len()).unwrap(),
@@ -148,7 +146,7 @@ impl RewriteSystem {
                 }
             } else {
                 let len = self.get_length(term_fragment).unwrap();
-                subtitution[var] = Some(&term_fragment[..len.get()]);
+                substitution.push(&term_fragment[..len.get()]);
                 Some((len, NonZeroUsize::new(1).unwrap()))
             }
         } else if term_fragment[0] != rule_fragment[0] {
@@ -161,7 +159,7 @@ impl RewriteSystem {
                 if let Some((len1, len2)) = self.match_rule_helper(
                     &rule_fragment[pos2..],
                     &term_fragment[pos1..],
-                    subtitution,
+                    substitution,
                 ) {
                     pos1 += len1.get();
                     pos2 += len2.get();
@@ -178,8 +176,10 @@ impl RewriteSystem {
 
     /// Checks if the given rule matches the term and returns the substitution
     /// of the variables of the rule to subterms that makes them equal.
-    pub fn match_rule<'a>(&self, rule: &[i32], term: &'a [i32]) -> Option<Vec<Option<&'a [i32]>>> {
+    /// The rule's variables must first appear in ascending order.
+    pub fn match_rule<'a>(&self, rule: &[i32], term: &'a [i32]) -> Option<Vec<&'a [i32]>> {
         debug_assert!(!rule.is_empty() && !term.is_empty());
+        debug_assert!(self.is_ascending(rule).is_some());
         let mut substitution = vec![];
         if let Some((len1, len2)) = self.match_rule_helper(rule, term, &mut substitution) {
             debug_assert!(len1.get() == term.len() && len2.get() == rule.len());
@@ -189,7 +189,7 @@ impl RewriteSystem {
         }
     }
 
-    fn is_reduced_helper<'a>(&self, term: &'a [i32], temp: &mut Vec<Option<&'a [i32]>>) -> bool {
+    fn is_reduced_helper<'a>(&self, term: &'a [i32], temp: &mut Vec<&'a [i32]>) -> bool {
         if let Some((_, subterms)) = self.is_operation(term) {
             for t in subterms {
                 if !self.is_reduced_helper(t, temp) {
@@ -218,39 +218,32 @@ impl RewriteSystem {
     /// The caller must ensure that the rewrite rules terminate.
     pub fn rewrite(&self, term: &[i32]) -> Vec<i32> {
         debug_assert!(self.is_valid(term));
-        let mut substitution = vec![None; self.num_variables(term)];
-        for (i, &s) in term.iter().enumerate() {
-            if s >= 0 {
-                substitution[s as usize] = Some(&term[i..i + 1]);
-            }
-        }
-        self.evaluate_helper(term, &substitution)
+        self.evaluate_helper(term, &[])
     }
 
-    /// Replaces the variables in the term with the matching substitution.
-    pub fn substitute(&self, term: &[i32], substitution: &[Option<&[i32]>]) -> Vec<i32> {
+    /// Replaces variables simultaneously, keeping variables whose indices are
+    /// outside the substitution.
+    pub fn substitute(&self, term: &[i32], substitution: &[&[i32]]) -> Vec<i32> {
         let mut result = vec![];
         for &s in term {
-            if s < 0 {
-                result.push(s)
+            if s >= 0 && (s as usize) < substitution.len() {
+                result.extend_from_slice(substitution[s as usize]);
             } else {
-                let s = s as usize;
-                assert!(s < substitution.len() && substitution[s].is_some());
-                result.extend_from_slice(substitution[s].unwrap());
+                result.push(s);
             }
         }
         result
     }
 
-    /// Evaluates a valid term with fully reduced substitution values.
-    fn evaluate_helper(&self, term: &[i32], substitution: &[Option<&[i32]>]) -> Vec<i32> {
+    /// Evaluates a valid term with fully reduced substitution values, keeping
+    /// variables whose indices are outside the substitution.
+    fn evaluate_helper(&self, term: &[i32], substitution: &[&[i32]]) -> Vec<i32> {
         debug_assert!(self.is_valid(term));
         debug_assert!(substitution
             .iter()
-            .flatten()
             .all(|t| self.is_valid(t) && self.is_reduced(t)));
         if let Some(var) = self.is_variable(term) {
-            substitution[var].unwrap().to_vec()
+            substitution.get(var).copied().unwrap_or(term).to_vec()
         } else {
             let (oper, subterms) = self.is_operation(term).unwrap();
             let elems: Vec<_> = subterms
@@ -347,11 +340,22 @@ mod tests {
         let pattern = [-1, 0, 0];
         let term = [-1, -1, 1, 2, -1, 1, 2];
         let substitution = system.match_rule(&pattern, &term).unwrap();
-        assert_eq!(substitution, vec![Some(&term[1..4])]);
+        assert_eq!(substitution, vec![&term[1..4]]);
         assert_eq!(system.substitute(&pattern, &substitution), term);
         assert!(system
             .match_rule(&pattern, &[-1, -1, 1, 2, -1, 2, 1])
             .is_none());
+    }
+
+    #[test]
+    fn partial_substitution() {
+        let mut system = RewriteSystem::default();
+        system.add_operation("mul", 2);
+        let term = [-1, 0, i32::MAX];
+        assert_eq!(system.substitute(&term, &[]), term);
+        assert_eq!(system.substitute(&term, &[&[1]]), vec![-1, 1, i32::MAX]);
+        assert_eq!(system.evaluate_helper(&term, &[&[1]]), vec![-1, 1, i32::MAX]);
+        assert_eq!(system.substitute(&[-1, 0, 1], &[&[1], &[2]]), vec![-1, 1, 2]);
     }
 
     #[test]
@@ -366,6 +370,11 @@ mod tests {
         assert!(system.contains(&result));
         assert_eq!(system.rewrite(&result), result);
         assert_eq!(system.rewrite(&[7]), vec![7]);
+        assert_eq!(system.rewrite(&[i32::MAX]), vec![i32::MAX]);
+        assert_eq!(
+            system.rewrite(&[-1, -1, i32::MAX, 0, 7]),
+            vec![-1, i32::MAX, -1, 0, 7]
+        );
         assert_eq!(system.rewrite(&[-2]), vec![-2]);
     }
 
