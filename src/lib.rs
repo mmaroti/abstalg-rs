@@ -54,3 +54,6 @@ pub use permutations::*;
 
 mod rewrite_system;
 pub use rewrite_system::*;
+
+mod free_algebras;
+pub use free_algebras::*;
