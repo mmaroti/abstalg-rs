@@ -3,12 +3,13 @@
 
 use crate::*;
 
-/// The ring of square matrices of a fixed size over a field.
-/// The matrices are plain vectors of field elements.
+/// The ring of square matrices of a fixed size over a unitary ring.
+/// The matrices are plain vectors of base ring elements.
+/// Determinants and inverses are available only when the base is a field.
 #[derive(Clone, Debug)]
 pub struct MatrixRing<A>
 where
-    A: Field,
+    A: UnitaryRing,
 {
     valg: VectorAlgebra<A>,
     size: usize,
@@ -17,7 +18,7 @@ where
 #[allow(clippy::len_without_is_empty)]
 impl<A> MatrixRing<A>
 where
-    A: Field,
+    A: UnitaryRing,
 {
     /// Creates a new matrix ring for the given base and size.
     pub fn new(base: A, size: usize) -> Self {
@@ -54,6 +55,12 @@ where
         res
     }
 
+}
+
+impl<A> MatrixRing<A>
+where
+    A: Field,
+{
     /// Multiplies the given row of the matrix by the given coefficient.
     fn mul_row(&self, elem: &mut <Self as Domain>::Elem, row: usize, coef: &A::Elem) {
         let row = row * self.size();
@@ -128,7 +135,7 @@ where
 
 impl<A> Domain for MatrixRing<A>
 where
-    A: Field,
+    A: UnitaryRing,
 {
     type Elem = Vec<A::Elem>;
 
@@ -151,7 +158,7 @@ where
 
 impl<A> Semigroup for MatrixRing<A>
 where
-    A: Field,
+    A: UnitaryRing,
 {
     fn mul(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Self::Elem {
         assert!(elem1.len() == self.len() && elem2.len() == self.len());
@@ -175,7 +182,7 @@ where
 
 impl<A> Monoid for MatrixRing<A>
 where
-    A: Field,
+    A: UnitaryRing,
 {
     fn one(&self) -> Self::Elem {
         self.int(1)
@@ -227,7 +234,7 @@ where
 
 impl<A> CommutativeMonoid for MatrixRing<A>
 where
-    A: Field,
+    A: UnitaryRing,
 {
     fn zero(&self) -> Self::Elem {
         self.valg.zero()
@@ -252,7 +259,7 @@ where
 
 impl<A> AbelianGroup for MatrixRing<A>
 where
-    A: Field,
+    A: UnitaryRing,
 {
     fn neg(&self, elem: &Self::Elem) -> Self::Elem {
         self.valg.neg(elem)
@@ -271,11 +278,11 @@ where
     }
 }
 
-impl<A> SemiRing for MatrixRing<A> where A: Field {}
+impl<A> SemiRing for MatrixRing<A> where A: UnitaryRing {}
 
 impl<A> UnitaryRing for MatrixRing<A>
 where
-    A: Field,
+    A: UnitaryRing,
 {
     fn int(&self, elem: isize) -> Self::Elem {
         let elem = self.base().int(elem);
@@ -290,6 +297,32 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn matrices_over_polynomials() {
+        let ring = MatrixRing::new(PolynomialAlgebra::new(ZZ), 2);
+        let x = vec![ZZ.int(0), ZZ.int(1)];
+        let one = ring.base().one();
+        let zero = ring.base().zero();
+        let elem = vec![x.clone(), one.clone(), zero.clone(), x.clone()];
+
+        assert!(ring.contains(&elem));
+        assert_eq!(ring.transpose(&elem), vec![x.clone(), zero, one, x]);
+        assert_eq!(ring.mul(&elem, &ring.one()), elem);
+        assert_eq!(ring.mul(&ring.one(), &elem), elem);
+        assert_eq!(
+            ring.mul(&elem, &elem),
+            vec![
+                vec![ZZ.int(0), ZZ.int(0), ZZ.int(1)],
+                vec![ZZ.int(0), ZZ.int(2)],
+                vec![],
+                vec![ZZ.int(0), ZZ.int(0), ZZ.int(1)],
+            ]
+        );
+        assert_eq!(ring.add(&elem, &ring.neg(&elem)), ring.zero());
+        assert_eq!(ring.sub(&elem, &elem), ring.zero());
+        assert_eq!(ring.int(2), ring.add(&ring.one(), &ring.one()));
+    }
 
     #[test]
     fn matrix_det() {

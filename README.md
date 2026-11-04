@@ -15,6 +15,7 @@ efficiently, since this common value needs to be stored only once in the algebra
 Another benefit is that matrices are stored as simple vectors, and only the
 matrix algebra needs to know the shape of the matrix.
 
+Arbitrary-precision integers and rationals are available through `ZZ` and `QQ`.
 All finite prime fields can be constructed from the ring of integers by
 taking the quotient ring by a prime number. The two-element field can also
 be used directly on the set of `bool` values. All finite fields can be constructed
@@ -24,6 +25,8 @@ can be constructed as direct powers of the two-element Boolean algebra.
 The divisibility order (on the set of associate classes) with distributive
 lattice operations can be constructed for Euclidean domains, such as the
 ring of integers and the ring of polynomials over a field. The ring of
-square matrices can be formed over a field. The general linear group of
-invertible matrices and the special linear group of matrices of unit
-determinant can be formed over any field.
+square matrices can be formed over any unitary ring, with determinants and
+inverses currently supported only over fields. These constructions can be
+nested to form matrices over polynomial rings and polynomials over matrix rings.
+The general linear group of invertible matrices and the special linear group
+of matrices of unit determinant can be formed over any field.
