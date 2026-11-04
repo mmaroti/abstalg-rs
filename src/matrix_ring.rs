@@ -5,7 +5,8 @@ use crate::*;
 
 /// The ring of square matrices of a fixed size over a unitary ring.
 /// The matrices are plain vectors of base ring elements.
-/// Determinants and inverses are available only when the base is a field.
+/// Determinants, inverses, and reduced row echelon forms are available only
+/// when the base is a field.
 #[derive(Clone, Debug)]
 pub struct MatrixRing<A>
 where
@@ -54,7 +55,6 @@ where
         }
         res
     }
-
 }
 
 impl<A> MatrixRing<A>
@@ -130,6 +130,35 @@ where
         }
 
         det
+    }
+
+    /// Returns the reduced row echelon form using Gauss-Jordan elimination.
+    /// The matrix keeps its shape, including any zero rows at the bottom.
+    pub fn reduced_row_echelon(&self, elem: &<Self as Domain>::Elem) -> <Self as Domain>::Elem {
+        assert!(elem.len() == self.len());
+        let mut elem = elem.clone();
+        let mut pivot_row = 0;
+        for col in 0..self.size {
+            let row = (pivot_row..self.size)
+                .find(|&row| !self.base().is_zero(&elem[row * self.size + col]));
+            if let Some(row) = row {
+                self.swap_rows(&mut elem, row, pivot_row);
+                let coef = self.base().inv(&elem[pivot_row * self.size + col]);
+                self.mul_row(&mut elem, pivot_row, &coef);
+                for row in 0..self.size {
+                    if row == pivot_row {
+                        continue;
+                    }
+                    let coef = &elem[row * self.size + col];
+                    if !self.base().is_zero(coef) {
+                        let coef = self.base().neg(coef);
+                        self.add_rows(&mut elem, pivot_row, row, &coef);
+                    }
+                }
+                pivot_row += 1;
+            }
+        }
+        elem
     }
 }
 
@@ -297,6 +326,16 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reduced_row_echelon_finite_field() {
+        let ring = MatrixRing::new(QuotientField::new(I32, 5), 3);
+        let elem = vec![0, 2, 1, 0, 4, 2, 0, 0, 0];
+        assert_eq!(
+            ring.reduced_row_echelon(&elem),
+            vec![0, 1, 3, 0, 0, 0, 0, 0, 0]
+        );
+    }
 
     #[test]
     fn matrices_over_polynomials() {
