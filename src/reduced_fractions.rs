@@ -202,35 +202,114 @@ mod tests {
     }
 
     #[test]
-    fn ops() {
+    fn farey_fraction_counts() {
+        use std::collections::BTreeSet;
+
+        // https://oeis.org/A005728, orders 1..20 (the order-zero term is omitted).
+        let expected = [
+            2, 3, 5, 7, 11, 13, 19, 23, 29, 33,
+            43, 47, 59, 65, 73, 81, 97, 103, 121, 129,
+        ];
         let field = ReducedFractions::new(I32);
-        for numer in -20..20 {
-            for denom in -20..20 {
+        for n in 1..=20i32 {
+            let mut fractions = BTreeSet::new();
+            let mut reference = Vec::new();
+            for b in 1..=n {
+                for a in 0..=b {
+                    let fraction = field.reduce(&Ratio::new_raw(a, b));
+                    assert!(field.contains(&fraction));
+                    let numer = *fraction.numer();
+                    let denom = *fraction.denom();
+                    assert!(denom > 0 && denom <= n);
+                    assert!(numer >= 0 && numer <= denom);
+                    assert_eq!(numer * b, a * denom);
+                    assert_eq!(field.reduce(&fraction), fraction);
+                    for scale in [-3, -2, -1, 1, 2, 3] {
+                        assert_eq!(
+                            field.reduce(&Ratio::new_raw(a * scale, b * scale)),
+                            fraction
+                        );
+                    }
+                    fractions.insert((numer, denom));
+                    // Discover equivalence classes without reducing fractions.
+                    if !reference.iter().any(|&(c, d)| a * d == c * b) {
+                        reference.push((a, b));
+                    }
+                }
+            }
+            assert_eq!(fractions.len(), expected[n as usize - 1]);
+            assert_eq!(fractions.len(), reference.len());
+            let mut sorted: Vec<_> = fractions.into_iter().collect();
+            sorted.sort_by(|&(a, b), &(c, d)| (a * d).cmp(&(c * b)));
+            assert_eq!(sorted.first(), Some(&(0, 1)));
+            assert_eq!(sorted.last(), Some(&(1, 1)));
+            for pair in sorted.windows(2) {
+                let (a, b) = pair[0];
+                let (c, d) = pair[1];
+                assert_eq!(b * c - a * d, 1);
+                assert!(b + d > n);
+            }
+        }
+    }
+
+    #[test]
+    fn ops() {
+        // Cross multiplication and native integer GCD provide a reference
+        // independent of ReducedFractions and num::Ratio arithmetic.
+        fn check(value: &Ratio<i32>, numer: i64, denom: i64) {
+            assert_ne!(denom, 0);
+            assert!(value.denom() > &0);
+            assert_eq!(num::integer::gcd(*value.numer(), *value.denom()), 1);
+            assert_eq!(
+                i64::from(*value.numer()) * denom,
+                numer * i64::from(*value.denom())
+            );
+        }
+
+        let field = ReducedFractions::new(I32);
+        let mut elems = Vec::new();
+        for numer in -20..=20 {
+            for denom in -20..=20 {
                 if denom == 0 {
                     continue;
                 }
-                let elem1 = Ratio::<i32>::new_raw(numer, denom);
-                assert_eq!(*elem1.numer(), numer);
-                assert_eq!(*elem1.denom(), denom);
-
-                let elem1 = field.reduce(&elem1);
-                let elem2 = Ratio::<i32>::new(numer, denom);
-                assert_eq!(elem1, elem2);
-
-                let elem2 = Ratio::<i32>::new(-2, 3);
-                assert_eq!(elem1 + elem2, field.add(&elem1, &elem2));
-                assert_eq!(elem1 * elem2, field.mul(&elem1, &elem2));
-                assert_eq!(elem1 / elem2, field.div(&elem1, &elem2));
-                if numer != 0 {
-                    assert_eq!(elem2 / elem1, field.div(&elem2, &elem1));
+                let raw = Ratio::new_raw(numer, denom);
+                let elem = field.reduce(&raw);
+                check(&elem, i64::from(numer), i64::from(denom));
+                assert!(field.contains(&elem));
+                assert_eq!(field.reduce(&elem), elem);
+                for scale in [-3, -2, -1, 1, 2, 3] {
+                    assert_eq!(
+                        field.reduce(&Ratio::new_raw(numer * scale, denom * scale)),
+                        elem
+                    );
                 }
+                elems.push(elem);
+            }
+        }
+        elems.sort();
+        elems.dedup();
 
-                let elem2 = Ratio::<i32>::new(7, 5);
-                assert_eq!(elem1 + elem2, field.add(&elem1, &elem2));
-                assert_eq!(elem1 * elem2, field.mul(&elem1, &elem2));
-                assert_eq!(elem1 / elem2, field.div(&elem1, &elem2));
-                if numer != 0 {
-                    assert_eq!(elem2 / elem1, field.div(&elem2, &elem1));
+        for a in &elems {
+            let an = i64::from(*a.numer());
+            let ad = i64::from(*a.denom());
+            check(&field.neg(a), -an, ad);
+            match field.try_inv(a) {
+                Some(inv) => {
+                    assert_ne!(an, 0);
+                    check(&inv, ad, an);
+                    assert_eq!(field.mul(a, &inv), field.one());
+                }
+                None => assert_eq!(an, 0),
+            }
+            for b in &elems {
+                let bn = i64::from(*b.numer());
+                let bd = i64::from(*b.denom());
+                check(&field.add(a, b), an * bd + bn * ad, ad * bd);
+                check(&field.sub(a, b), an * bd - bn * ad, ad * bd);
+                check(&field.mul(a, b), an * bn, ad * bd);
+                if bn != 0 {
+                    check(&field.div(a, b), an * bd, ad * bn);
                 }
             }
         }

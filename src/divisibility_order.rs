@@ -89,26 +89,38 @@ mod tests {
     fn order() {
         let lat = DivisibilityOrder::new(I32);
 
-        for a in -50..50 {
-            if a < 0 {
-                assert!(!lat.contains(&a));
-                continue;
+        fn divides(a: i32, b: i32) -> bool {
+            if a == 0 {
+                b == 0
+            } else {
+                b % a == 0
             }
+        }
 
-            for b in 0..50 {
-                let c = lat.meet(&a, &b);
-                assert!(lat.contains(&c));
-                assert!(lat.leq(&c, &a));
-                assert!(lat.leq(&c, &b));
+        for a in -50..=50 {
+            assert_eq!(lat.contains(&a), a >= 0);
+        }
+        for a in 0..=50 {
+            for b in 0..=50 {
+                assert_eq!(lat.leq(&a, &b), divides(a, b));
+                let meet = lat.meet(&a, &b);
+                let join = lat.join(&a, &b);
+                assert!(lat.contains(&meet));
+                assert!(lat.contains(&join));
+                assert!(divides(meet, a) && divides(meet, b));
+                assert!(divides(a, join) && divides(b, join));
+                assert_eq!(meet, lat.meet(&b, &a));
+                assert_eq!(join, lat.join(&b, &a));
 
-                let d = lat.join(&a, &b);
-                assert!(lat.contains(&d));
-                assert!(lat.leq(&a, &d));
-                assert!(lat.leq(&a, &d));
-
-                if lat.leq(&a, &b) {
-                    assert!(c == a);
-                    assert!(d == b);
+                // Includes every possible GCD and LCM of these inputs.
+                // Zero is the greatest element in the divisibility order.
+                for c in 0..=2500 {
+                    if divides(c, a) && divides(c, b) {
+                        assert!(divides(c, meet), "meet: a={}, b={}, c={}", a, b, c);
+                    }
+                    if divides(a, c) && divides(b, c) {
+                        assert!(divides(join, c), "join: a={}, b={}, c={}", a, b, c);
+                    }
                 }
             }
         }

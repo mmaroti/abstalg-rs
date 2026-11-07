@@ -327,6 +327,123 @@ where
 mod tests {
     use super::*;
 
+    fn binary_matrix(bits: u32, size: usize) -> Vec<i8> {
+        (0..size * size).map(|i| ((bits >> i) & 1) as i8).collect()
+    }
+
+    // Encode the span as a set of binary vectors, without matrix operations.
+    fn binary_row_space(matrix: &[i8], size: usize) -> u32 {
+        let mut space = 0;
+        for coefficients in 0..1usize << size {
+            let mut vector = 0;
+            for row in 0..size {
+                if coefficients & (1 << row) != 0 {
+                    for col in 0..size {
+                        vector ^= u32::from(matrix[row * size + col] != 0) << col;
+                    }
+                }
+            }
+            space |= 1 << vector;
+        }
+        space
+    }
+
+    #[test]
+    fn binary_row_space_counts() {
+        use std::collections::{BTreeMap, BTreeSet};
+
+        // https://oeis.org/A006116, dimensions 0..4.
+        let expected = [1, 2, 5, 16, 67];
+        for size in 0..=4 {
+            let ring = MatrixRing::new(GF2, size);
+            let mut spaces = BTreeMap::new();
+            let mut reduced_forms = BTreeSet::new();
+            for bits in 0..1u32 << (size * size) {
+                let matrix = binary_matrix(bits, size);
+                let reduced = ring.reduced_row_echelon(&matrix);
+                assert!(ring.contains(&reduced));
+                assert_eq!(ring.reduced_row_echelon(&reduced), reduced);
+                let space = binary_row_space(&matrix, size);
+                assert_eq!(binary_row_space(&reduced, size), space);
+
+                let mut previous_pivot = None;
+                let mut zero_row_seen = false;
+                for row in 0..size {
+                    let pivot = (0..size).find(|&col| reduced[row * size + col] != 0);
+                    if let Some(col) = pivot {
+                        assert!(!zero_row_seen);
+                        assert!(previous_pivot.map_or(true, |previous| previous < col));
+                        assert_eq!(reduced[row * size + col], 1);
+                        for other_row in 0..size {
+                            if other_row != row {
+                                assert_eq!(reduced[other_row * size + col], 0);
+                            }
+                        }
+                        previous_pivot = Some(col);
+                    } else {
+                        zero_row_seen = true;
+                    }
+                }
+                if let Some(previous) = spaces.insert(space, reduced.clone()) {
+                    assert_eq!(previous, reduced);
+                }
+                reduced_forms.insert(reduced);
+            }
+            assert_eq!(spaces.len(), expected[size]);
+            assert_eq!(reduced_forms.len(), expected[size]);
+        }
+    }
+
+    #[test]
+    fn binary_nilpotency_index_counts() {
+        // Independent multiplication of row-major bit encodings over GF(2).
+        fn multiply(a: u32, b: u32, size: usize) -> u32 {
+            let mut product = 0;
+            for row in 0..size {
+                for col in 0..size {
+                    let mut entry = 0;
+                    for k in 0..size {
+                        entry ^= ((a >> (row * size + k)) & 1)
+                            & ((b >> (k * size + col)) & 1);
+                    }
+                    product |= entry << (row * size + col);
+                }
+            }
+            product
+        }
+
+        // https://oeis.org/A346214, rows for dimensions 1..4.
+        // Their sums agree with https://oeis.org/A053763.
+        let expected: &[&[usize]] = &[&[1], &[1, 3], &[1, 21, 42], &[1, 315, 1260, 2520]];
+        for size in 1..=4 {
+            let ring = MatrixRing::new(GF2, size);
+            let mut counts = vec![0; size];
+            for bits in 0..1u32 << (size * size) {
+                let matrix = binary_matrix(bits, size);
+                let mut power = ring.one();
+                let mut reference = 0;
+                for i in 0..size {
+                    reference |= 1 << (i * size + i);
+                }
+                let mut index = None;
+                for exponent in 1..=size {
+                    power = ring.mul(&power, &matrix);
+                    reference = multiply(reference, bits, size);
+                    assert_eq!(power, binary_matrix(reference, size));
+                    assert_eq!(ring.power(exponent, &matrix), power);
+                    if reference == 0 && index.is_none() {
+                        index = Some(exponent);
+                    }
+                }
+                if let Some(index) = index {
+                    counts[index - 1] += 1;
+                }
+            }
+            assert_eq!(counts, expected[size - 1]);
+            assert_eq!(counts.iter().sum::<usize>(), 1 << (size * (size - 1)));
+        }
+    }
+
     #[test]
     fn reduced_row_echelon_finite_field() {
         let ring = MatrixRing::new(QuotientField::new(I32, 5), 3);

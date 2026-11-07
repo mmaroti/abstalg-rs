@@ -107,39 +107,97 @@ mod tests {
     use super::*;
 
     #[test]
-    fn contains() {
-        let group = Permutations::new(2);
-        assert!(group.contains(&vec![1, 0]));
-        assert!(!group.contains(&vec![]));
-        assert!(!group.contains(&vec![0, 0]));
-        assert!(!group.contains(&vec![0, 2]));
-        assert!(!group.contains(&vec![0, u32::MAX]));
-    }
-
-    #[test]
-    fn s4() {
-        let perm = Permutations::new(4);
-        let mut count = 0;
-
-        let mut elem = vec![0; 4];
-        for i in 0..256 {
-            let mut a = i;
-            for b in elem.iter_mut() {
-                *b = a % 4;
-                a /= 4;
+    fn symmetric_groups_exhaustive() {
+        // https://oeis.org/A000142 and https://oeis.org/A000085, n = 0..5.
+        let factorials = [1, 1, 2, 6, 24, 120];
+        let involutions = [1, 1, 2, 4, 10, 26];
+        for n in 0..=5u32 {
+            let group = Permutations::new(n);
+            let identity: Vec<u32> = (0..n).collect();
+            assert_eq!(group.one(), identity);
+            let mut elems = Vec::new();
+            // Also enumerate out-of-range images, independently of contains.
+            for mut code in 0..(n + 1).pow(n) {
+                let elem: Vec<u32> = (0..n)
+                    .map(|_| {
+                        let image = code % (n + 1);
+                        code /= n + 1;
+                        image
+                    })
+                    .collect();
+                let mut sorted = elem.clone();
+                sorted.sort();
+                let bijective = sorted == identity;
+                assert_eq!(group.contains(&elem), bijective);
+                if bijective {
+                    elems.push(elem);
+                }
             }
-            if perm.contains(&elem) {
-                count += 1;
+            assert_eq!(elems.len(), factorials[n as usize]);
+            let mut count = 0;
+            for a in &elems {
+                let inv = group.inv(a);
+                assert!(group.contains(&inv));
+                assert_eq!(group.mul(a, &inv), identity);
+                assert_eq!(group.mul(&inv, a), identity);
+                assert_eq!(group.is_one(a), a == &identity);
+                for i in 0..n as usize {
+                    assert_eq!(inv[a[i] as usize], i as u32);
+                }
+                let mut squared = a.clone();
+                group.square(&mut squared);
+                assert_eq!(squared, group.mul(a, a));
+                if squared == identity {
+                    count += 1;
+                }
+                // Compute powers independently by following each point's orbit.
+                for exponent in -12isize..=12 {
+                    let mut expected = Vec::new();
+                    for i in 0..n {
+                        let mut length = 1;
+                        let mut image = a[i as usize];
+                        while image != i {
+                            length += 1;
+                            image = a[image as usize];
+                        }
+                        let mut image = i;
+                        for _ in 0..exponent.rem_euclid(length) {
+                            image = a[image as usize];
+                        }
+                        expected.push(image);
+                    }
+                    assert_eq!(group.power_signed(exponent, a), expected);
+                    if exponent >= 0 {
+                        assert_eq!(group.power(exponent as usize, a), expected);
+                    }
+                }
+                let mut malformed = a.clone();
+                malformed.push(0);
+                assert!(!group.contains(&malformed));
+                if n > 0 {
+                    malformed = a.clone();
+                    malformed.pop();
+                    assert!(!group.contains(&malformed));
+                    malformed = a.clone();
+                    malformed[0] = u32::MAX;
+                    assert!(!group.contains(&malformed));
+                }
+                for b in &elems {
+                    let expected: Vec<u32> = a.iter().map(|&i| b[i as usize]).collect();
+                    let product = group.mul(a, b);
+                    assert_eq!(product, expected);
+                    assert!(group.contains(&product));
+                    let mut assigned = a.clone();
+                    group.mul_assign(&mut assigned, b);
+                    assert_eq!(assigned, product);
+                    if n <= 4 {
+                        for c in &elems {
+                            assert_eq!(group.mul(&product, c), group.mul(a, &group.mul(b, c)));
+                        }
+                    }
+                }
             }
+            assert_eq!(count, involutions[n as usize]);
         }
-        assert_eq!(count, 24);
-
-        let elem1 = vec![1, 2, 3, 0];
-        let elem2 = vec![1, 0, 3, 2];
-        let elem3 = vec![0, 3, 2, 1];
-        assert_eq!(perm.mul(&elem1, &elem2), elem3);
-
-        let elem4 = vec![3, 0, 1, 2];
-        assert_eq!(perm.inv(&elem1), elem4);
     }
 }

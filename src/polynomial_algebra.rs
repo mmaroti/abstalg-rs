@@ -346,6 +346,55 @@ mod tests {
     use super::*;
 
     #[test]
+    fn binary_irreducible_polynomial_counts() {
+        fn polynomial(bits: u32) -> Vec<i8> {
+            (0..(32 - bits.leading_zeros()))
+                .map(|i| ((bits >> i) & 1) as i8)
+                .collect()
+        }
+
+        // Independent GF(2) long division using bit operations.
+        fn remainder(mut dividend: u32, divisor: u32) -> u32 {
+            while dividend != 0 && dividend.leading_zeros() <= divisor.leading_zeros() {
+                dividend ^= divisor << (divisor.leading_zeros() - dividend.leading_zeros());
+            }
+            dividend
+        }
+
+        let ring = PolynomialAlgebra::new(GF2);
+        // https://oeis.org/A001037, degrees 1..8 (omit the degree-zero convention).
+        let expected = [2, 1, 2, 3, 6, 9, 18, 30];
+        for degree in 1..=8u32 {
+            let mut count = 0;
+            for bits in (1 << degree)..(1 << (degree + 1)) {
+                let f = polynomial(bits);
+                assert!(ring.contains(&f));
+                assert_eq!(ring.degree(&f), Some(degree as usize));
+                let mut irreducible = true;
+                // Every reducible degree-d polynomial has a factor of degree <= d/2.
+                for factor_degree in 1..=degree / 2 {
+                    for divisor in (1 << factor_degree)..(1 << (factor_degree + 1)) {
+                        let g = polynomial(divisor);
+                        let (q, r) = ring.quo_rem(&f, &g);
+                        assert!(ring.contains(&q) && ring.contains(&r));
+                        assert_eq!(r, polynomial(remainder(bits, divisor)));
+                        assert_eq!(ring.add(&ring.mul(&q, &g), &r), f);
+                        assert_eq!(
+                            ring.try_div(&f, &g),
+                            if r.is_empty() { Some(q) } else { None }
+                        );
+                        irreducible &= !r.is_empty();
+                    }
+                }
+                if irreducible {
+                    count += 1;
+                }
+            }
+            assert_eq!(count, expected[degree as usize - 1]);
+        }
+    }
+
+    #[test]
     fn compose() {
         let ring = PolynomialAlgebra::new(I32);
         let poly = vec![1, -2, 3];
