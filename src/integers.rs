@@ -91,6 +91,8 @@ impl SemiRing for Integers {}
 
 impl UnitaryRing for Integers {}
 
+impl CommutativeRing for Integers {}
+
 impl IntegralDomain for Integers {
     fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {
         assert!(!elem2.is_zero());

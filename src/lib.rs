@@ -51,3 +51,6 @@ pub use two_element_algebra::*;
 
 mod permutations;
 pub use permutations::*;
+
+mod quadratic_algebra;
+pub use quadratic_algebra::*;

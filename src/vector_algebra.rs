@@ -217,6 +217,8 @@ where
     }
 }
 
+impl<A: CommutativeRing> CommutativeRing for VectorAlgebra<A> {}
+
 impl<A> PartialOrder for VectorAlgebra<A>
 where
     A: PartialOrder,

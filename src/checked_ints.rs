@@ -133,6 +133,8 @@ impl<E> SemiRing for CheckedInts<E> where E: PrimInt + Signed + Debug + From<i8>
 
 impl<E> UnitaryRing for CheckedInts<E> where E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize> {}
 
+impl<E> CommutativeRing for CheckedInts<E> where E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize> {}
+
 impl<E> IntegralDomain for CheckedInts<E>
 where
     E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,

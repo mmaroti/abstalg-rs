@@ -189,11 +189,14 @@ pub trait UnitaryRing: SemiRing + AbelianGroup {
     }
 }
 
+/// A unitary ring whose multiplication is commutative.
+pub trait CommutativeRing: UnitaryRing {}
+
 /// An integral domain is a commutative unitary ring in which the product of
 /// non-zero elements is non-zero. This trait adds operations for divisibility
 /// and associates. Typical examples are the integers and the ring of
 /// polynomials with integer coefficients; the latter is not a Euclidean domain.
-pub trait IntegralDomain: UnitaryRing + InvertibleMonoid {
+pub trait IntegralDomain: CommutativeRing + InvertibleMonoid {
     /// Checks if the second element divides the first one and returns the
     /// unique quotient if it exists. This method panics if the second element
     /// is zero (because then there would be no unique solution).
@@ -438,6 +441,8 @@ pub trait Field: EuclideanDomain {
         }
     }
 }
+
+impl<A: Field> CommutativeRing for A {}
 
 impl<A: Field> IntegralDomain for A {
     fn try_div(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> Option<Self::Elem> {

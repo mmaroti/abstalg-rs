@@ -16,6 +16,9 @@ Another benefit is that matrices are stored as simple vectors, and only the
 matrix algebra needs to know the shape of the matrix.
 
 Arbitrary-precision integers and rationals are available through `ZZ` and `QQ`.
+Gaussian and Eisenstein integers are available through `ZZI` and `ZZW`, including
+Euclidean division, GCDs, and congruence solving. The field of reals can be
+approximated using `f32` and `f64`, the field of complex numbers can be formed.
 All finite prime fields can be constructed from the ring of integers by
 taking the quotient ring by a prime number. The two-element field can also
 be used directly on the set of `bool` values. All finite fields can be constructed

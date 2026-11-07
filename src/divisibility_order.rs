@@ -116,10 +116,10 @@ mod tests {
                 // Zero is the greatest element in the divisibility order.
                 for c in 0..=2500 {
                     if divides(c, a) && divides(c, b) {
-                        assert!(divides(c, meet), "meet: a={}, b={}, c={}", a, b, c);
+                        assert!(divides(c, meet));
                     }
                     if divides(a, c) && divides(b, c) {
-                        assert!(divides(join, c), "join: a={}, b={}, c={}", a, b, c);
+                        assert!(divides(join, c));
                     }
                 }
             }

@@ -115,6 +115,8 @@ impl<A> SemiRing for QuotientRing<A> where A: EuclideanDomain {}
 
 impl<A> UnitaryRing for QuotientRing<A> where A: EuclideanDomain {}
 
+impl<A: EuclideanDomain> CommutativeRing for QuotientRing<A> {}
+
 #[cfg(test)]
 mod tests {
     use super::*;

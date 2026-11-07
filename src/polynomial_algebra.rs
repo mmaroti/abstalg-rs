@@ -250,6 +250,8 @@ impl<A> SemiRing for PolynomialAlgebra<A> where A: UnitaryRing {}
 
 impl<A> UnitaryRing for PolynomialAlgebra<A> where A: UnitaryRing {}
 
+impl<A: CommutativeRing> CommutativeRing for PolynomialAlgebra<A> {}
+
 impl<A> IntegralDomain for PolynomialAlgebra<A>
 where
     A: IntegralDomain,
