@@ -68,7 +68,7 @@ impl QuadraticPolicy for Generic {
 ///
 /// ```
 /// use abstalg::*;
-/// let complex = QuadraticAlgebra::new(QQ, Imaginary);
+/// let complex = QuadraticAlgebra::with_policy(QQ, Imaginary);
 /// let i = (QQ.zero(), QQ.one());
 /// assert_eq!(complex.mul(&i, &i), complex.int(-1));
 /// ```
@@ -83,7 +83,7 @@ pub struct QuadraticAlgebra<A: CommutativeRing, P: QuadraticPolicy = Generic> {
 impl<A: CommutativeRing, P: QuadraticPolicy> QuadraticAlgebra<A, P> {
     /// Creates the algebra from a coefficient ring and a relation policy.
     /// The policy computes `t` and `u` once; subsequent operations borrow them.
-    pub fn new(base: A, policy: P) -> Self {
+    pub fn with_policy(base: A, policy: P) -> Self {
         let t = policy.t(&base);
         let u = policy.u(&base);
         assert!(base.contains(&t) && base.contains(&u));
@@ -146,6 +146,20 @@ impl<A: CommutativeRing, P: QuadraticPolicy> QuadraticAlgebra<A, P> {
             ),
             &self.base.mul(&self.u, &self.base.mul(&elem.1, &elem.1)),
         )
+    }
+}
+
+impl<A: CommutativeRing> QuadraticAlgebra<A, Imaginary> {
+    /// Creates the imaginary extension with relation `i^2 = -1`.
+    pub fn new(base: A) -> Self {
+        Self::with_policy(base, Imaginary)
+    }
+}
+
+impl<A: CommutativeRing> QuadraticAlgebra<A, Eisenstein> {
+    /// Creates the Eisenstein extension with relation `omega^2 = -omega - 1`.
+    pub fn new(base: A) -> Self {
+        Self::with_policy(base, Eisenstein)
     }
 }
 
@@ -216,12 +230,27 @@ impl<A: CommutativeRing, P: QuadraticPolicy> SemiRing for QuadraticAlgebra<A, P>
 impl<A: CommutativeRing, P: QuadraticPolicy> UnitaryRing for QuadraticAlgebra<A, P> {}
 impl<A: CommutativeRing, P: QuadraticPolicy> CommutativeRing for QuadraticAlgebra<A, P> {}
 
+/// Numbers `a + b*i` over the chosen coefficient ring, defaulting to `QQ`.
+/// Supports conjugation, algebraic norm, and unit inversion through `try_inv`;
+/// this alias does not add a `Field` implementation.
+///
+/// ```
+/// use abstalg::*;
+/// let exact = ComplexNumbers::new(QQ);
+/// let i = exact.generator();
+/// assert_eq!(exact.mul(&i, &i), exact.int(-1));
+/// assert_eq!(exact.try_inv(&i), Some(exact.neg(&i)));
+/// let approximate = ComplexNumbers::new(F64);
+/// assert_eq!(approximate.norm(&(3.0, 4.0)), 25.0);
+/// ```
+pub type ComplexNumbers<A = ReducedFractions<Integers>> = QuadraticAlgebra<A, Imaginary>;
+
 /// Gaussian integers over the chosen integer coefficient representation.
-/// Construct with `QuadraticAlgebra::new(base, Imaginary)`.
+/// Construct with `GaussianIntegers::new(base)`.
 pub type GaussianIntegers<A = Integers> = QuadraticAlgebra<A, Imaginary>;
 
 /// Eisenstein integers over the chosen integer coefficient representation.
-/// Construct with `QuadraticAlgebra::new(base, Eisenstein)`.
+/// Construct with `EisensteinIntegers::new(base)`.
 pub type EisensteinIntegers<A = Integers> = QuadraticAlgebra<A, Eisenstein>;
 
 /// Gaussian integers with arbitrary-precision coefficients, initialized once.
@@ -230,11 +259,11 @@ pub type EisensteinIntegers<A = Integers> = QuadraticAlgebra<A, Eisenstein>;
 /// use abstalg::*;
 /// let i = ZZI.generator();
 /// assert_eq!(ZZI.mul(&i, &i), ZZI.int(-1));
-/// let checked = QuadraticAlgebra::new(I32, Imaginary);
+/// let checked = GaussianIntegers::new(I32);
 /// assert_eq!(checked.norm(&(3, 2)), 13);
 /// ```
 pub static ZZI: std::sync::LazyLock<GaussianIntegers> =
-    std::sync::LazyLock::new(|| QuadraticAlgebra::new(ZZ, Imaginary));
+    std::sync::LazyLock::new(|| GaussianIntegers::new(ZZ));
 
 /// Eisenstein integers with arbitrary-precision coefficients, initialized once.
 ///
@@ -242,11 +271,11 @@ pub static ZZI: std::sync::LazyLock<GaussianIntegers> =
 /// use abstalg::*;
 /// let omega = ZZW.generator();
 /// assert_eq!(ZZW.power(3, &omega), ZZW.one());
-/// let checked = QuadraticAlgebra::new(I32, Eisenstein);
+/// let checked = EisensteinIntegers::new(I32);
 /// assert_eq!(checked.norm(&(1, -1)), 3);
 /// ```
 pub static ZZW: std::sync::LazyLock<EisensteinIntegers> =
-    std::sync::LazyLock::new(|| QuadraticAlgebra::new(ZZ, Eisenstein));
+    std::sync::LazyLock::new(|| EisensteinIntegers::new(ZZ));
 
 /// Marks Gaussian or Eisenstein algebras over ordered integer coefficient
 /// rings. These algebras support the shared lattice division algorithm and
@@ -383,7 +412,7 @@ mod tests {
             let elems: Vec<_> = (0..n).flat_map(|a| (0..n).map(move |b| (a, b))).collect();
             for t in 0..n {
                 for u in 0..n {
-                    let ring = QuadraticAlgebra::new(
+                    let ring = QuadraticAlgebra::with_policy(
                         base.clone(),
                         Generic {
                             t: t as isize,
@@ -446,7 +475,7 @@ mod tests {
     fn rational_quadratic_inverses() {
         for t in -1..=1 {
             for u in -1..=1 {
-                let ring = QuadraticAlgebra::new(QQ, Generic { t, u });
+                let ring = QuadraticAlgebra::with_policy(QQ, Generic { t, u });
                 for a in -3..=3 {
                     for b in -3..=3 {
                         let elem = (QQ.int(a), QQ.int(b));
@@ -590,8 +619,8 @@ mod tests {
     {
         use num::ToPrimitive;
 
-        let ring = QuadraticAlgebra::new(base, policy.clone());
-        let reference = QuadraticAlgebra::new(ZZ, policy);
+        let ring = QuadraticAlgebra::with_policy(base, policy.clone());
+        let reference = QuadraticAlgebra::with_policy(ZZ, policy);
         let convert = |elem: &Elem| {
             (
                 ring.base.int(elem.0.to_isize().unwrap()),
@@ -659,7 +688,7 @@ mod tests {
             }
         }
         let calls = Rc::new(Cell::new(0));
-        let ring = QuadraticAlgebra::new(I32, Counted(calls.clone()));
+        let ring = QuadraticAlgebra::with_policy(I32, Counted(calls.clone()));
         for a in -3..=3 {
             for b in -3..=3 {
                 let elem = (a, b);
@@ -674,9 +703,9 @@ mod tests {
 
     #[test]
     fn imaginary_policy_over_different_bases() {
-        let rational = QuadraticAlgebra::new(QQ, Imaginary);
-        let approximate = QuadraticAlgebra::new(F64, Imaginary);
-        let polynomial = QuadraticAlgebra::new(PolynomialAlgebra::new(QQ), Imaginary);
+        let rational = ComplexNumbers::new(QQ);
+        let approximate = ComplexNumbers::new(F64);
+        let polynomial = QuadraticAlgebra::with_policy(PolynomialAlgebra::new(QQ), Imaginary);
         for a in -3..=3 {
             for b in -3..=3 {
                 let elem = (QQ.int(a), QQ.int(b));
@@ -693,7 +722,7 @@ mod tests {
         // Coefficients must be created using the actual runtime modulus,
         // including the trivial ring where minus one is represented by zero.
         for n in 1..=5 {
-            let ring = QuadraticAlgebra::new(QuotientRing::new(I32, n), Imaginary);
+            let ring = QuadraticAlgebra::with_policy(QuotientRing::new(I32, n), Imaginary);
             assert_eq!(*ring.u(), (-1i32).rem_euclid(n));
         }
     }
