@@ -123,7 +123,7 @@ where
         elem1.checked_sub(elem2).unwrap()
     }
 
-    fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+    fn times_signed(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
         let num: Option<Self::Elem> = num.try_into().ok();
         elem.checked_mul(&num.expect("value is too large")).unwrap()
     }

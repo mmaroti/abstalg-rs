@@ -64,7 +64,7 @@ where
     pub fn derivative(&self, elem: &[A::Elem]) -> Vec<A::Elem> {
         let mut deriv = Vec::new();
         for (i, coef) in elem.iter().enumerate().skip(1) {
-            deriv.push(CommutativeMonoid::times(&self.base, i, coef));
+            deriv.push(self.base.times(i, coef));
         }
         while deriv.last().map_or(false, |coef| self.base.is_zero(coef)) {
             deriv.pop();
@@ -231,10 +231,10 @@ where
         elem.iter().map(|a| self.base.neg(a)).collect()
     }
 
-    fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+    fn times_signed(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
         let mut elem: Self::Elem = elem
             .iter()
-            .map(|a| AbelianGroup::times(&self.base, num, a))
+            .map(|a| self.base.times_signed(num, a))
             .collect();
         for i in (0..elem.len()).rev() {
             if !self.base.is_zero(&elem[i]) {

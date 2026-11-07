@@ -47,6 +47,24 @@ pub trait Monoid: Semigroup {
     /// The multiplicative identity element of the monoid.
     fn one(&self) -> Self::Elem;
 
+    /// Returns a nonnegative power using the square-and-multiply method.
+    /// The zeroth power is the identity, including for a zero base.
+    fn power(&self, mut num: usize, elem: &Self::Elem) -> Self::Elem {
+        let mut elem = elem.clone();
+
+        let mut res = self.one();
+        while num > 0 {
+            if num % 2 != 0 {
+                self.mul_assign(&mut res, &elem);
+            }
+            num /= 2;
+            if num > 0 {
+                self.square(&mut elem);
+            }
+        }
+        res
+    }
+
     /// Checks if the given element is the multiplicative identity.
     fn is_one(&self, elem: &Self::Elem) -> bool {
         self.equals(elem, &self.one())
@@ -117,25 +135,13 @@ pub trait Group: InvertibleMonoid {
 
     /// Returns the power of the given element using the square-and-multiply
     /// method.
-    fn power(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
-        let mut elem = if num < 0 {
+    fn power_signed(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+        let elem = if num < 0 {
             self.inv(elem)
         } else {
             elem.clone()
         };
-        let mut num = num.unsigned_abs();
-
-        let mut res = self.one();
-        while num > 0 {
-            if num % 2 != 0 {
-                self.mul_assign(&mut res, &elem);
-            }
-            num /= 2;
-            if num > 0 {
-                self.square(&mut elem);
-            }
-        }
-        res
+        self.power(num.unsigned_abs(), &elem)
     }
 }
 
@@ -162,10 +168,10 @@ pub trait AbelianGroup: CommutativeMonoid {
         self.add_assign(elem1, &self.neg(elem2));
     }
 
-    /// Returns an integer multiple of the given element.
-    fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+    /// Returns a signed integer multiple of the given element.
+    fn times_signed(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
         let group = AdditiveGroup::new(self.clone());
-        group.power(num, elem)
+        group.power_signed(num, elem)
     }
 }
 
@@ -179,7 +185,7 @@ pub trait UnitaryRing: SemiRing + AbelianGroup {
     /// Returns the given integer multiple of the multiplicative identity
     /// of the ring.
     fn int(&self, elem: isize) -> Self::Elem {
-        AbelianGroup::times(self, elem, &self.one())
+        self.times_signed(elem, &self.one())
     }
 }
 
@@ -290,6 +296,115 @@ pub trait EuclideanDomain: IntegralDomain {
         }
     }
 
+    /// Returns `(g, x, y)` with `elem1 * x + elem2 * y = g`, where `g`
+    /// is the associate representative of the greatest common divisor
+    /// (nonnegative for integers and monic for nonzero polynomials over a field).
+    /// If both inputs are zero, returns `(zero, one, zero)`.
+    fn normalized_extended_gcd(
+        &self,
+        elem1: &Self::Elem,
+        elem2: &Self::Elem,
+    ) -> (Self::Elem, Self::Elem, Self::Elem) {
+        let (gcd, x, y) = self.extended_gcd(elem1, elem2);
+        if self.is_zero(&gcd) {
+            (gcd, x, y)
+        } else {
+            let coef = self.associate_coef(&gcd);
+            (
+                self.mul(&coef, &gcd),
+                self.mul(&coef, &x),
+                self.mul(&coef, &y),
+            )
+        }
+    }
+
+    /// Solves `a * x = b` modulo `modulo`, returning `Some((r, m))` when
+    /// the solutions are exactly `x = r` modulo `m`, or `None` if inconsistent.
+    /// The returned modulus is its associate representative, and the residue
+    /// is reduced when the modulus is nonzero.
+    ///
+    /// ```
+    /// use abstalg::*;
+    /// assert_eq!(I32.solve_congruence(&4, &2, &6), Some((2, 3)));
+    /// assert_eq!(I32.solve_congruence(&4, &1, &6), None);
+    /// assert_eq!(I32.solve_congruence(&2, &6, &0), Some((3, 0)));
+    /// ```
+    fn solve_congruence(
+        &self,
+        a: &Self::Elem,
+        b: &Self::Elem,
+        modulo: &Self::Elem,
+    ) -> Option<(Self::Elem, Self::Elem)> {
+        let (gcd, coef, _) = self.normalized_extended_gcd(a, modulo);
+        if self.is_zero(&gcd) {
+            return if self.is_zero(b) {
+                Some((self.zero(), self.one()))
+            } else {
+                None
+            };
+        }
+        let quotient = self.try_div(b, &gcd)?;
+        let modulus = self.associate_repr(&self.quo(modulo, &gcd));
+        let residue = self.mul(&coef, &quotient);
+        let residue = if self.is_zero(&modulus) {
+            residue
+        } else {
+            self.rem(&residue, &modulus)
+        };
+        Some((residue, modulus))
+    }
+
+    /// Combines `x = a` modulo `m` and `x = b` modulo `n`, returning a
+    /// residue and modulus describing all common solutions, or `None` if
+    /// inconsistent. The moduli need not be relatively prime.
+    ///
+    /// ```
+    /// use abstalg::*;
+    /// assert_eq!(I32.combine_congruences(&2, &3, &3, &5), Some((8, 15)));
+    /// assert_eq!(I32.combine_congruences(&1, &4, &3, &6), Some((9, 12)));
+    /// assert_eq!(I32.combine_congruences(&0, &4, &1, &6), None);
+    /// ```
+    fn combine_congruences(
+        &self,
+        a: &Self::Elem,
+        m: &Self::Elem,
+        b: &Self::Elem,
+        n: &Self::Elem,
+    ) -> Option<(Self::Elem, Self::Elem)> {
+        let (offset, period) = self.solve_congruence(m, &self.sub(b, a), n)?;
+        let modulus = self.associate_repr(&self.mul(m, &period));
+        let residue = self.add(a, &self.mul(m, &offset));
+        let residue = if self.is_zero(&modulus) {
+            residue
+        } else {
+            self.rem(&residue, &modulus)
+        };
+        Some((residue, modulus))
+    }
+
+    /// Solves a system of congruences, each given as `(a, b, modulo)` for
+    /// `a * x = b` modulo `modulo`. Returns a residue and normalized modulus
+    /// describing all simultaneous solutions, or `None` if inconsistent.
+    /// A zero modulus means exact equality.
+    ///
+    /// ```
+    /// use abstalg::*;
+    /// let equations = vec![(4, 2, 6), (1, 3, 5), (1, 2, 7)];
+    /// assert_eq!(I32.solve_congruences(equations), Some((23, 105)));
+    /// assert_eq!(I32.solve_congruences(std::iter::empty()), Some((0, 1)));
+    /// ```
+    fn solve_congruences<I>(&self, congruences: I) -> Option<(Self::Elem, Self::Elem)>
+    where
+        I: IntoIterator<Item = (Self::Elem, Self::Elem, Self::Elem)>,
+    {
+        let mut solution = (self.zero(), self.one());
+        for (a, b, modulo) in congruences {
+            let (residue, modulus) = self.solve_congruence(&a, &b, &modulo)?;
+            solution = self.combine_congruences(&solution.0, &solution.1, &residue, &modulus)?;
+        }
+        Some(solution)
+    }
+
     /// Checks if the two given elements are relatively prime.
     fn relative_primes(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         let gcd = self.gcd(elem1, elem2);
@@ -313,13 +428,13 @@ pub trait Field: EuclideanDomain {
         self.mul(elem1, &self.inv(elem2))
     }
 
-    /// Returns an integer power of the given element.
-    fn power(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+    /// Returns a signed integer power of the given element.
+    fn power_signed(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
         if self.is_zero(elem) {
             self.zero()
         } else {
             let group = MultiplicativeGroup::new(self.clone());
-            group.power(num, elem)
+            group.power_signed(num, elem)
         }
     }
 }

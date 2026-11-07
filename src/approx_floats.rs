@@ -109,7 +109,7 @@ where
         elem
     }
 
-    fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+    fn times_signed(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
         let num = num::cast::<isize, E>(num).expect("integer cannot be converted to float");
         self.mul(&num, elem)
     }
@@ -193,22 +193,22 @@ mod tests {
     #[test]
     fn scaling() {
         for num in [isize::MIN, -3, -1, 0, 1, 3, isize::MAX] {
-            assert_eq!(AbelianGroup::times(&F32, num, &2.0), (num as f32) * 2.0);
-            assert_eq!(AbelianGroup::times(&F64, num, &2.0), (num as f64) * 2.0);
+            assert_eq!(F32.times_signed(num, &2.0), (num as f32) * 2.0);
+            assert_eq!(F64.times_signed(num, &2.0), (num as f64) * 2.0);
         }
-        assert_eq!(AbelianGroup::times(&F32, 0, &f32::MAX), 0.0);
-        assert_eq!(AbelianGroup::times(&F64, 0, &f64::MAX), 0.0);
+        assert_eq!(F32.times_signed(0, &f32::MAX), 0.0);
+        assert_eq!(F64.times_signed(0, &f64::MAX), 0.0);
     }
 
     #[test]
     #[should_panic]
     fn scaling_overflow_f32() {
-        AbelianGroup::times(&F32, 2, &f32::MAX);
+        F32.times_signed(2, &f32::MAX);
     }
 
     #[test]
     #[should_panic]
     fn scaling_overflow_f64() {
-        AbelianGroup::times(&F64, 2, &f64::MAX);
+        F64.times_signed(2, &f64::MAX);
     }
 }

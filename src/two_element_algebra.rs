@@ -92,7 +92,7 @@ impl AbelianGroup for TwoElementAlgebra {
         *elem1 ^= *elem2;
     }
 
-    fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+    fn times_signed(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
         *elem && (num % 2 != 0)
     }
 }
@@ -112,7 +112,7 @@ impl Field for TwoElementAlgebra {
         *elem1
     }
 
-    fn power(&self, _num: isize, elem: &Self::Elem) -> Self::Elem {
+    fn power_signed(&self, _num: isize, elem: &Self::Elem) -> Self::Elem {
         *elem
     }
 }

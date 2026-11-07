@@ -150,9 +150,9 @@ where
         Self::Elem::new_raw(self.base.neg(elem.numer()), elem.denom().clone())
     }
 
-    fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+    fn times_signed(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
         let elem = Self::Elem::new_raw(
-            AbelianGroup::times(&self.base, num, elem.numer()),
+            self.base.times_signed(num, elem.numer()),
             elem.denom().clone(),
         );
         self.reduce(&elem)

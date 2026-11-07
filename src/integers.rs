@@ -82,7 +82,7 @@ impl AbelianGroup for Integers {
         elem1 - elem2
     }
 
-    fn times(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
+    fn times_signed(&self, num: isize, elem: &Self::Elem) -> Self::Elem {
         num * elem
     }
 }

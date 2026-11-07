@@ -24,7 +24,9 @@ the quotient ring by an irreducible polynomial. All finite Boolean algebras
 can be constructed as direct powers of the two-element Boolean algebra.
 The divisibility order (on the set of associate classes) with distributive
 lattice operations can be constructed for Euclidean domains, such as the
-ring of integers and the ring of polynomials over a field. The ring of
+ring of integers and the ring of polynomials over a field. Systems of congruences
+can be solved over any Euclidean domain, including integers and polynomials
+over a field. The ring of
 square matrices can be formed over any unitary ring, with determinants and
 inverses currently supported only over fields. These constructions can be
 nested to form matrices over polynomial rings and polynomials over matrix rings.
