@@ -202,6 +202,15 @@ where
     }
 }
 
+impl<E> IntegerDomain for CheckedInts<E>
+where
+    E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize> + num::integer::Roots,
+{
+    fn sqrt(&self, elem: &Self::Elem) -> Self::Elem {
+        num::integer::Roots::sqrt(elem)
+    }
+}
+
 impl<E> PartialOrder for CheckedInts<E>
 where
     E: PrimInt + Signed + Debug + From<i8> + TryFrom<isize>,
@@ -232,7 +241,48 @@ impl<E> DistributiveLattice for CheckedInts<E> where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use num::BigInt;
+    use num::{BigInt, ToPrimitive};
+
+    #[test]
+    fn square_root_bounds() {
+        fn check<A>(ring: A, max: A::Elem)
+        where
+            A: IntegerDomain,
+            A::Elem: num::ToPrimitive,
+        {
+            let verify = |n: A::Elem| {
+                let root = ring.sqrt(&n);
+                let n = BigInt::from(n.to_i128().unwrap());
+                let root = BigInt::from(root.to_i128().unwrap());
+                assert!(root >= BigInt::from(0));
+                assert!(&root * &root <= n);
+                let next = &root + 1;
+                assert!(&next * &next > n);
+            };
+            let bound = max.to_u128().unwrap().min(4096) as isize;
+            for n in 0..=bound {
+                verify(ring.int(n));
+            }
+            for offset in 0..=16 {
+                verify(ring.sub(&max, &ring.int(offset)));
+            }
+            for n in -16..0 {
+                assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    ring.sqrt(&ring.int(n))
+                })).is_err());
+            }
+            let min = ring.sub(&ring.neg(&max), &ring.one());
+            assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                ring.sqrt(&min)
+            })).is_err());
+        }
+        check(I8, i8::MAX);
+        check(I16, i16::MAX);
+        check(I32, i32::MAX);
+        check(I64, i64::MAX);
+        check(CheckedInts::<i128> { phantom: PhantomData }, i128::MAX);
+        check(CheckedInts::<isize> { phantom: PhantomData }, isize::MAX);
+    }
 
     #[test]
     fn quo_rem() {

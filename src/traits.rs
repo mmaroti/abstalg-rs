@@ -415,6 +415,18 @@ pub trait EuclideanDomain: IntegralDomain {
     }
 }
 
+/// The ordinary ordered ring of integers, possibly with a checked finite
+/// representation. The order is total and agrees with integer addition and
+/// multiplication; every element represents an integer, and units are +/-1.
+/// Associate representatives are absolute values. Euclidean division satisfies
+/// `a = b*q + r` with `0 <= r < abs(b)`, so division by a positive element
+/// gives the floor quotient.
+pub trait IntegerDomain: EuclideanDomain + PartialOrder {
+    /// Returns the nonnegative floor square root `r`, satisfying
+    /// `r*r <= elem < (r+1)*(r+1)`. Panics if `elem` is negative.
+    fn sqrt(&self, elem: &Self::Elem) -> Self::Elem;
+}
+
 /// A field is a commutative ring with identity where each non-zero element
 /// has a multiplicative inverse. Typical examples are the real, complex, and
 /// rational numbers, and finite fields constructed from a Euclidean domain

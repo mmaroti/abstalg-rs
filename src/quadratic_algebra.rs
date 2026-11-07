@@ -258,22 +258,12 @@ pub static ZZW: std::sync::LazyLock<EisensteinIntegers> =
 /// positive divisors. Other quadratic algebras must not implement this marker.
 pub trait QuadraticInteger: Domain {}
 
-impl QuadraticInteger for QuadraticAlgebra<Integers, Imaginary> {}
-impl QuadraticInteger for QuadraticAlgebra<Integers, Eisenstein> {}
-
-impl<E> QuadraticInteger for QuadraticAlgebra<CheckedInts<E>, Imaginary> where
-    E: num::PrimInt + num::Signed + std::fmt::Debug + From<i8> + std::convert::TryFrom<isize>
-{
-}
-
-impl<E> QuadraticInteger for QuadraticAlgebra<CheckedInts<E>, Eisenstein> where
-    E: num::PrimInt + num::Signed + std::fmt::Debug + From<i8> + std::convert::TryFrom<isize>
-{
-}
+impl<A: IntegerDomain> QuadraticInteger for QuadraticAlgebra<A, Imaginary> {}
+impl<A: IntegerDomain> QuadraticInteger for QuadraticAlgebra<A, Eisenstein> {}
 
 impl<A, P> QuadraticAlgebra<A, P>
 where
-    A: EuclideanDomain + PartialOrder,
+    A: IntegerDomain,
     P: QuadraticPolicy,
     Self: QuadraticInteger<Elem = (A::Elem, A::Elem)>,
 {
@@ -343,7 +333,7 @@ where
 
 impl<A, P> IntegralDomain for QuadraticAlgebra<A, P>
 where
-    A: EuclideanDomain + PartialOrder,
+    A: IntegerDomain,
     P: QuadraticPolicy,
     Self: QuadraticInteger<Elem = (A::Elem, A::Elem)>,
 {
@@ -369,7 +359,7 @@ where
 
 impl<A, P> EuclideanDomain for QuadraticAlgebra<A, P>
 where
-    A: EuclideanDomain + PartialOrder,
+    A: IntegerDomain,
     P: QuadraticPolicy,
     Self: QuadraticInteger<Elem = (A::Elem, A::Elem)>,
 {
@@ -593,7 +583,7 @@ mod tests {
 
     fn compare_checked<A, P>(base: A, policy: P)
     where
-        A: EuclideanDomain + PartialOrder,
+        A: IntegerDomain,
         P: QuadraticPolicy,
         QuadraticAlgebra<A, P>: QuadraticInteger<Elem = (A::Elem, A::Elem)>,
         QuadraticAlgebra<Integers, P>: QuadraticInteger<Elem = Elem>,

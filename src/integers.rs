@@ -156,6 +156,12 @@ impl EuclideanDomain for Integers {
     }
 }
 
+impl IntegerDomain for Integers {
+    fn sqrt(&self, elem: &Self::Elem) -> Self::Elem {
+        elem.sqrt()
+    }
+}
+
 impl PartialOrder for Integers {
     fn leq(&self, elem1: &Self::Elem, elem2: &Self::Elem) -> bool {
         elem1 <= elem2
@@ -177,6 +183,33 @@ impl DistributiveLattice for Integers {}
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn square_root_bounds() {
+        fn check(n: BigInt) {
+            let r = ZZ.sqrt(&n);
+            assert!(r >= BigInt::from(0));
+            assert!(&r * &r <= n);
+            let next = &r + 1;
+            assert!(&next * &next > n);
+        }
+
+        for n in 0..=4096 {
+            check(BigInt::from(n));
+        }
+        for bits in [8, 32, 64, 127, 256, 1024] {
+            for offset in -3..=3 {
+                let root = (BigInt::from(1) << bits) + offset;
+                let square = &root * &root;
+                for delta in -1..=1 {
+                    check(&square + delta);
+                }
+            }
+        }
+        for n in -128..0 {
+            assert!(std::panic::catch_unwind(|| ZZ.sqrt(&BigInt::from(n))).is_err());
+        }
+    }
 
     #[test]
     fn quo_rem() {
